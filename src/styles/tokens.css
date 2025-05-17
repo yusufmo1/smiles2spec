@@ -1,0 +1,46 @@
+:root {
+  /* Light mode palette */
+  --bg-0: #f7f7f8;
+  --bg-anim-1: rgba(114, 135, 253, 0.35);
+  --bg-anim-2: rgba(146, 113, 255, 0.3);
+
+  /* Surface */
+  --surface-glass: rgba(255, 255, 255, 0.75);
+  --surface-glass-hover: rgba(255, 255, 255, 0.85);
+  --surface-stroke: rgba(60, 60, 67, 0.15);
+  --surface-accent-stroke: rgba(120, 121, 255, 0.35);
+  
+  /* Text */
+  --text-primary: #1c1c1e;
+  --text-secondary: rgba(60, 60, 67, 0.78);
+  --text-tertiary: rgba(60, 60, 67, 0.55);
+
+  /* Accent */
+  --accent: #7879ff;
+  --accent-secondary: #5b5cfb;
+  --accent-soft: rgba(120, 121, 255, 0.18);
+  --accent-warning: #ff9f0a;
+  
+  /* Shadows */
+  --shadow-sm: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 6px 16px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.15);
+  --shadow-inset: 0 1px 4px rgba(255, 255, 255, 0.6) inset;
+  
+  /* Force pill shapes on all primary containers */
+  --radius-sm: 16px;
+  --radius-md: 24px;
+  --radius-lg: 32px;
+  --radius-pill: 50px;
+  
+  /* Enforced radius values with !important */
+  --enforce-sm: var(--radius-sm) !important;
+  --enforce-md: var(--radius-md) !important;
+  --enforce-lg: var(--radius-lg) !important;
+  --enforce-pill: var(--radius-pill) !important;
+  
+  /* Transitions */
+  --transition-fast: 120ms cubic-bezier(0.17, 0.67, 0.83, 0.67);
+  --transition-smooth: 240ms cubic-bezier(0.33, 0, 0.67, 1);
+  --transition-elastic: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+} 

@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mass Spectrometry Prediction</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #container { max-width: 800px; margin: 0 auto; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input[type="text"] { width: 80%; padding: 8px; }
+        button { padding: 8px 15px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+        #plot { width: 100%; height: 400px; }
+        #results { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Mass Spectrometry Prediction</h1>
+        <div class="input-group">
+            <label for="smiles">SMILES String:</label>
+            <input type="text" id="smiles" placeholder="Enter SMILES string" value="CC(=O)OC1=CC=CC=C1C(=O)O">
+            <button onclick="predict()">Predict</button>
+        </div>
+        <div id="plot"></div>
+        <div id="results"></div>
+    </div>
+    
+    <script>
+        function predict() {
+            const smiles = document.getElementById('smiles').value;
+            if (!smiles) {
+                alert('Please enter a SMILES string');
+                return;
+            }
+            
+            fetch('/api/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ smiles: smiles })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                
+                // Create plot
+                const layout = {
+                    title: 'Predicted Mass Spectrum',
+                    xaxis: { title: 'm/z' },
+                    yaxis: { title: 'Relative Intensity' }
+                };
+                
+                Plotly.newPlot('plot', [{
+                    x: data.spectrum.x,
+                    y: data.spectrum.y,
+                    type: 'bar'
+                }], layout);
+                
+                // Display results
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = `
+                    <h3>Results</h3>
+                    <p><strong>SMILES:</strong> ${data.smiles}</p>
+                    <p><strong>Molecular Weight:</strong> ${data.molecular_weight.toFixed(4)}</p>
+                    <p><strong>Exact Mass:</strong> ${data.exact_mass.toFixed(4)}</p>
+                    <p><strong>Number of Peaks:</strong> ${data.peaks.length}</p>
+                `;
+                
+                if (data.warning) {
+                    resultsDiv.innerHTML += `<p><strong>Warning:</strong> ${data.warning}</p>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error communicating with the server');
+            });
+        }
+    </script>
+</body>
+</html>
+    
