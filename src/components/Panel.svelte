@@ -1,8 +1,23 @@
 <script>
+  import { focusedPanel } from '../stores.js';
+  import { onMount } from 'svelte';
+
   export let title = '';
+  let htmlString;          // will hold the rendered markup
+  let panelEl;             // bind:this element
+
+  // after mount grab our outerHTML so we can clone into overlay
+  onMount(() => {
+    htmlString = panelEl.outerHTML;
+  });
+
+  function handleClick() {
+    // if nothing is focused → focus this one
+    focusedPanel.update(current => current ? current : htmlString);
+  }
 </script>
 
-<div class="glass-card panel">
+<div bind:this={panelEl} class="glass-card panel" on:click={handleClick}>
   {#if title}
     <header>
       <div class="title-wrapper">

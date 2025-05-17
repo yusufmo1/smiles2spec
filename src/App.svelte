@@ -10,6 +10,7 @@
 	import Background from './components/Background.svelte';
 	import StructurePanel from './components/StructurePanel.svelte';
 	import BulkNavigator from './components/BulkNavigator.svelte';
+	import PanelOverlay from './components/PanelOverlay.svelte';
 	import { predictSpectrum } from './services/api.js';
 	
 	// Add responsive design variables
@@ -204,6 +205,8 @@
       </div>
     </div>
   </div>
+  
+  <PanelOverlay />
 </div>
 
 <style>

@@ -6,13 +6,13 @@
 
 ## ✨  Features
 
-| Layer                       | Highlights                                                                                                                                                                                                       |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Backend**                 | Flask 2.x REST API, Gunicorn production server, on‑the‑fly RDKit featurisation, trained regressor, JSON output with spectrum & peak list.                                                                        |
-| **Pre‑processing pipeline** | Parallelised (joblib) mass‑spectrum featuriser, automatic feature schema builder, variance/NaN filtering, scalable StandardScaler wrapper, artefact writer (`feature_preprocessor.pkl`, `feature_mapping.json`). |
-| **Model**                   | Any scikit‑learn compatible regressor (default: RandomForest) saved with `joblib`.                                                                                                                               |
-| **Frontend**                | Svelte + Plotly.js for interactive spectrum plots, simple form for SMILES input, fully static bundle served by Nginx.                                                                                            |
-| **Dev Ops**                 | Multi‑arch Docker build (arm64 & amd64), two‑service `docker‑compose`, automatic proxying `/api/*` → backend.                                                                                                    |
+| Layer                       | Highlights                                                                                                                                                                                           |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backend**                 | Flask 2.x REST API & Gunicorn server, on‑the‑fly RDKit featurisation, pretrained scikit‑learn regressor, JSON output with spectrum, peak list, molecular structure SVG and MSP export.               |
+| **Pre‑processing pipeline** | Parallelised (joblib) spectrum featuriser, automatic feature schema builder, variance / NaN filtering, StandardScaler wrapper, artefact writer (`feature_preprocessor.pkl`, `feature_mapping.json`). |
+| **Model**                   | Ready‑to‑use RandomForest intensity regressor (`spectrum_predictor.pkl`).                                                                                                                            |
+| **Frontend**                | Svelte + Plotly.js for interactive spectrum plots, chemical‑structure panel rendered from SVG, bulk SMILES upload (TXT), arrow navigator, MSP download, fully static bundle served by Nginx.         |
+| **Dev Ops**                 | Multi‑arch Docker build (arm64 & amd64), two‑service `docker‑compose`, automatic proxying `/api/*` → backend.                                                                                        |
 
 ---
 
@@ -110,24 +110,11 @@ docker compose up -d
 
 ---
 
-## 🔬  Pre‑processing & model training
+## 🔬  Model provenance & feature pipeline
 
-The Jupyter‑ready script in **backend/sanity.py** walks through:
+SMILES in → **RDKit featurisation** (physicochemical descriptors + 7 fingerprint families, **≈ 8 000 raw features**) → variance / NaN filtering → log‑scaling & `StandardScaler` → **RandomForest intensity regressor**.
 
-1. **Raw spectrum → peaks** (binning, normalisation)
-2. **Molecule features** (descriptors + fingerprints)
-3. **Feature schema analysis** (dynamic, dataset‑wide)
-4. **Scaler fitting & feature masks** (saved to `feature_preprocessor.pkl`)
-5. **Train / val / test split** (JSONL lines files)
-6. **Model fit** (separate notebook / script of your choice)
-
-After training, drop the following artefacts into `backend/models/`:
-
-* `spectrum_predictor.pkl` – the `sklearn` regressor
-* `feature_preprocessor.pkl` – feature masks + scalers
-* `feature_mapping.json`   – raw vs filtered feature ordering metadata
-
-The runtime API only needs those three files.
+The resulting artefacts (`feature_preprocessor.pkl`, `feature_mapping.json`, `spectrum_predictor.pkl`) live in `backend/models/` – you **don’t need to retrain**.
 
 ---
 
@@ -137,30 +124,47 @@ All endpoints accept / return **JSON**.
 
 ### `POST /api/predict`
 
+Request
+
 ```jsonc
 {
   "smiles": "CC(=O)OC1=CC=CC=C1C(=O)O"
 }
 ```
 
-**Response**
+Response
 
 ```jsonc
 {
   "smiles": "…",
+  "chemical_name": "acetylsalicylic acid",
   "molecular_weight": 180.157,
   "exact_mass": 180.0423,
-  "spectrum": {       // binned to 1 m/z increments
+  "spectrum": {
     "x": [0, 1, 2, …],
     "y": [0.0, 0.0, 0.03, …]
   },
-  "peaks": [          // intensity‑sorted list over threshold 0.01
+  "peaks": [
     {"mz": 43.0, "intensity": 0.91},
-    {"mz": 77.0, "intensity": 0.72},
-    …
-  ]
+    {"mz": 77.0, "intensity": 0.72}
+  ],
+  "structure_svg": "<svg…/svg>"
 }
 ```
+
+### `POST /api/export_msp`
+
+```jsonc
+{
+  "smiles": "CCO"
+}
+```
+
+Returns a downloadable `.msp` file (intensities scaled to 1000).
+
+### `POST /api/smiles_bulk`
+
+Multipart upload of a `.txt` file (one SMILES per line) → returns JSON list for the front‑end navigator.
 
 ### `GET /api/health`
 
@@ -170,22 +174,14 @@ All endpoints accept / return **JSON**.
 
 ---
 
-## 🛠  Customisation
-
-* **Change model** – retrain with your own regressor, just keep `.predict(X)` signature and overwrite `models/spectrum_predictor.pkl`.
-* **Add more features** – update `molecule_featurizer.py` and re‑run the preprocessing pipeline – the `FeatureSchemaBuilder` will automatically extend the schema.
-* **Front‑end tweaks** – Svelte components live in `src/components`; hot‑reload works out of the box (`npm run dev`).
-
----
-
 ## 📜  License
 
 MIT – see `LICENSE` file.
 
-RDKit binaries are licensed under the BSD 3‑Clause; any spectra data you train on may have its own licence – please check before distribution.
+RDKit binaries are licensed under the BSD 3‑Clause; any spectra data you train on may have its own licence – please check before distribution.
 
 ---
 
 ## 🙏  Acknowledgements
 
-This project started as part of an MSc thesis at QMUL. Thanks to the open‑source authors of **RDKit**, **scikit‑learn**, **Svelte** and **Plotly**.
+Built with **RDKit**, **scikit‑learn**, **Svelte** and **Plotly.js**. Many thanks to their respective communities.
