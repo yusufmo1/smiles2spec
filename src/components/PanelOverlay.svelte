@@ -1,5 +1,5 @@
 <script>
-    import { focusedPanel, carouselIndex } from '../stores.js';
+    import { focusedPanel, carouselIndex, isCarouselMode } from '../stores.js';
     import { fade, scale, fly } from 'svelte/transition';
     import { cubicOut, quartOut } from 'svelte/easing';
     import { onMount, onDestroy, tick } from 'svelte';
@@ -20,7 +20,10 @@
     let panels = []; // Array to store panel elements
     
     // Helpers
-    const close = () => focusedPanel.set(null);
+    const close = () => {
+      focusedPanel.set(null);
+      isCarouselMode.set(false);
+    };
     const next = () => swiperEl && swiperEl.swiper.slideNext();
     const prev = () => swiperEl && swiperEl.swiper.slidePrev();
   

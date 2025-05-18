@@ -1,11 +1,26 @@
 <script>
+  import CarouselToggle from './CarouselToggle.svelte';
   export let className = "";
+  export let showToggle = false;
+  export let toggleValue = false;
+  export let onToggle = () => {};
 </script>
 
 <header>
-  <div class="title-container">
-    <h1 class="display text-gradient {className}">SPECTRAL SIMULATION</h1>
-    <p>Enter SMILES string to predict high-resolution LC-ESI-qTOF mass spectra</p>
+  <div class="header-container">
+    <div class="title-container">
+      <h1 class="display text-gradient {className}">SPECTRAL SIMULATION</h1>
+      <p>Enter SMILES string to predict high-resolution LC-ESI-qTOF mass spectra</p>
+    </div>
+    
+    {#if showToggle}
+      <div class="toggle-container">
+        <CarouselToggle
+          bind:value={toggleValue}
+          on:change={(e) => onToggle(e.detail)}
+        />
+      </div>
+    {/if}
   </div>
 </header>
 
@@ -19,6 +34,11 @@
     height: auto;
   }
   
+  .header-container {
+    position: relative;
+    width: 100%;
+  }
+  
   .title-container {
     position: relative;
     z-index: 2;
@@ -26,6 +46,13 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+  }
+  
+  .toggle-container {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.75rem;
+    z-index: 3;
   }
   
   .display {

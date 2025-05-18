@@ -1,5 +1,5 @@
 <script>
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import Header from './components/Header.svelte';
 	import SmilesInput from './components/SmilesInput.svelte';
 	import SpectrumPlot from './components/SpectrumPlot.svelte';
@@ -13,6 +13,8 @@
 	import PanelOverlay from './components/PanelOverlay.svelte';
 	import ExportCenter from './components/ExportCenter.svelte';
 	import { predictSpectrum } from './services/api.js';
+	import { isCarouselMode, focusedPanel } from './stores.js';
+	import { get } from 'svelte/store';
 	
 	// Add responsive design variables
 	let windowWidth;
@@ -27,6 +29,7 @@
 	let idx = 0;                // current pointer
 	let currentName = "";       // from prediction response
 	let currentSmiles = "";
+	let hasFirstPrediction = false;  // tracking if we have at least one successful prediction
 	
 	// No default banner - the console starts empty
 	
@@ -56,6 +59,7 @@
 			peakData = result.peaks;
 			structurePNG = result.structure_png;
 			currentName = result.chemical_name;
+			hasFirstPrediction = true; // Mark that we have at least one successful prediction
 			
 			// Calculate and report peak statistics
 			const peakCount = peakData.length;
@@ -121,6 +125,25 @@
 		smilesInputComponent.$set({ smiles: s });
 		handlePredict({ detail: { smiles: s } });
 	}
+	
+	// Handle carousel toggle
+	async function handleToggle(val) {
+		isCarouselMode.set(val);
+		
+		if (val) {
+			// wait for next tick to ensure DOM is updated
+			await tick();
+			
+			// pick initial slide - first panel is fine
+			const firstPanel = document.querySelector('.panel');
+			if (firstPanel) {
+				focusedPanel.set(firstPanel);
+			}
+		} else {
+			// close overlay
+			focusedPanel.set(null);
+		}
+	}
 </script>
 
 <svelte:window bind:innerWidth={windowWidth}/>
@@ -135,7 +158,12 @@
 
 <!-- NEW master pill -->
 <div class="app-shell glass-card">
-  <Header className="prosto-one-regular" />
+  <Header 
+    className="prosto-one-regular" 
+    showToggle={hasFirstPrediction}
+    toggleValue={$isCarouselMode}
+    onToggle={handleToggle}
+  />
   
   <div class="body-wrapper">
     <!-- SMILES Input on its own row -->
