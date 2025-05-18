@@ -12,12 +12,17 @@
 	import BulkNavigator from './components/BulkNavigator.svelte';
 	import PanelOverlay from './components/PanelOverlay.svelte';
 	import ExportCenter from './components/ExportCenter.svelte';
+	import Navbar from './components/Navbar.svelte';
+	import HowItWorks from './components/HowItWorks.svelte';
 	import { predictSpectrum } from './services/api.js';
 	import { isCarouselMode, focusedPanel } from './stores.js';
 	import { get } from 'svelte/store';
 	
 	// Add responsive design variables
 	let windowWidth;
+	
+	// Add page navigation state
+	let currentPage = 'home';
 	
 	let spectrumData = null;
 	let peakData = [];
@@ -144,6 +149,11 @@
 			focusedPanel.set(null);
 		}
 	}
+	
+	// Handle page navigation from the navbar
+	function handlePageChange(newPage) {
+		currentPage = newPage;
+	}
 </script>
 
 <svelte:window bind:innerWidth={windowWidth}/>
@@ -156,96 +166,106 @@
 
 <Background />
 
+<!-- New Navbar moved here -->
+<Navbar 
+  activePage={currentPage}
+  on:click={(e) => handlePageChange(e.detail)}
+/>
+
 <!-- NEW master pill -->
 <div class="app-shell glass-card">
-  <Header 
-    className="prosto-one-regular" 
-    showToggle={hasFirstPrediction}
-    toggleValue={$isCarouselMode}
-    onToggle={handleToggle}
-  />
-  
-  <div class="body-wrapper">
-    <!-- SMILES Input on its own row -->
-    <div class="row">
-      <div class="col-full">
-        <SmilesInput 
-          on:predict={handlePredict}
-          on:bulk={handleBulk}
-          bind:this={smilesInputComponent}
-        />
-        
-        <!-- NEW navigator pill right below -->
-        <BulkNavigator name={currentName}
-                       index={bulkList.length ? idx+1 : 0}
-                       total={bulkList.length}
-                       on:prev={() => nav(-1)}
-                       on:next={() => nav(1)}/>
-      </div>
-    </div>
+  {#if currentPage === 'home'}
+    <Header 
+      className="prosto-one-regular" 
+      showToggle={hasFirstPrediction}
+      toggleValue={$isCarouselMode}
+      onToggle={handleToggle}
+    />
     
-    <!-- Error message if any -->
-    {#if error}
+    <div class="body-wrapper">
+      <!-- SMILES Input on its own row -->
       <div class="row">
         <div class="col-full">
-          <div class="error-message">
-            <span class="error-icon">⚠️</span>
-            {error}
-          </div>
+          <SmilesInput 
+            on:predict={handlePredict}
+            on:bulk={handleBulk}
+            bind:this={smilesInputComponent}
+          />
+          
+          <!-- NEW navigator pill right below -->
+          <BulkNavigator name={currentName}
+                         index={bulkList.length ? idx+1 : 0}
+                         total={bulkList.length}
+                         on:prev={() => nav(-1)}
+                         on:next={() => nav(1)}/>
         </div>
       </div>
-    {/if}
-    
-    <!-- Main visualization section with two equal columns -->
-    <div class="row">
-      <div class="col-half">
-        <Panel title="MASS SPECTRUM">
-          <SpectrumPlot spectrumData={spectrumData} />
-        </Panel>
+      
+      <!-- Error message if any -->
+      {#if error}
+        <div class="row">
+          <div class="col-full">
+            <div class="error-message">
+              <span class="error-icon">⚠️</span>
+              {error}
+            </div>
+          </div>
+        </div>
+      {/if}
+      
+      <!-- Main visualization section with two equal columns -->
+      <div class="row">
+        <div class="col-half">
+          <Panel title="MASS SPECTRUM">
+            <SpectrumPlot spectrumData={spectrumData} />
+          </Panel>
+        </div>
+        <div class="col-half">
+          <Panel title="TOP FRAGMENT IONS">
+            <IonFragmentation data={spectrumData} />
+          </Panel>
+        </div>
       </div>
-      <div class="col-half">
-        <Panel title="TOP FRAGMENT IONS">
-          <IonFragmentation data={spectrumData} />
-        </Panel>
+      
+      <!-- Chemical structure and fragment ions row -->
+      <div class="row">
+        <div class="col-half">
+          <Panel title="CHEMICAL STRUCTURE">
+            <StructurePanel png={structurePNG} />
+          </Panel>
+        </div>
+        <div class="col-half">
+          <Panel title="PEAK DATA TABLE">
+            <PeakTable peaks={peakData} smiles={currentSmiles} />
+          </Panel>
+        </div>
+      </div>
+      
+      <!-- Bottom row with Console Output -->
+      <div class="row">
+        <div class="col-half">
+          <Panel title="ANALYSIS CONSOLE">
+            <ConsoleOutput output={consoleText} />
+          </Panel>
+        </div>
+        <div class="col-half">
+          <!-- Empty panel for symmetry -->
+          <Panel title="EXPORT CENTER">
+            <ExportCenter 
+              spectrumData={spectrumData}
+              peakData={peakData}
+              structurePNG={structurePNG}
+              smiles={currentSmiles}
+              chemicalName={currentName}
+              smilesList={bulkList}
+            />
+          </Panel>
+        </div>
       </div>
     </div>
-    
-    <!-- Chemical structure and fragment ions row -->
-    <div class="row">
-      <div class="col-half">
-        <Panel title="CHEMICAL STRUCTURE">
-          <StructurePanel png={structurePNG} />
-        </Panel>
-      </div>
-      <div class="col-half">
-        <Panel title="PEAK DATA TABLE">
-          <PeakTable peaks={peakData} smiles={currentSmiles} />
-        </Panel>
-      </div>
-    </div>
-    
-    <!-- Bottom row with Console Output -->
-    <div class="row">
-      <div class="col-half">
-        <Panel title="ANALYSIS CONSOLE">
-          <ConsoleOutput output={consoleText} />
-        </Panel>
-      </div>
-      <div class="col-half">
-        <!-- Empty panel for symmetry -->
-        <Panel title="EXPORT CENTER">
-          <ExportCenter 
-            spectrumData={spectrumData}
-            peakData={peakData}
-            structurePNG={structurePNG}
-            smiles={currentSmiles}
-            chemicalName={currentName}
-            smilesList={bulkList}
-          />
-        </Panel>
-      </div>
-    </div>
-  </div>
+  {:else if currentPage === 'how-it-works'}
+    <HowItWorks />
+  {/if}
 </div>
 
 <!-- Moved PanelOverlay outside the app-shell -->
@@ -258,7 +278,7 @@
 	.app-shell {
 		width: 100%;
 		max-width: 90%;           /* Changed from 1440px to 90% to use most of the screen width */
-		margin: 3rem auto;         /* centred with top margin */
+		margin: 0 auto 3rem;      /* Adjusted margin-top to 0 to account for the navbar */
 		padding: 3.5rem 3rem 4rem; /* room for header and panels */
 		border-radius: var(--enforce-pill);
 		background: rgba(255,255,255,0.35);   /* much more transparent white */
@@ -344,7 +364,7 @@
 	/* Additional responsive tweaks for small screens */
 	@media (max-width: 640px) {
 		.app-shell {
-			margin: 1rem;
+			margin: 0 auto 1rem;  /* Adjusted top margin for navbar */
 			max-width: 95%;       /* Use even more width on small screens */
 			padding: 2rem 1.25rem 2.5rem;
 		}
