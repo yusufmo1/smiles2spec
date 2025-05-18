@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "framer-motion": "^12.12.1",
+    "jszip": "^3.10.1",
     "plotly.js-dist-min": "^3.0.1",
     "sirv-cli": "^2.0.0",
     "svelte-transitions": "^1.2.0",
