@@ -11,9 +11,23 @@
     htmlString = panelEl.outerHTML;
   });
 
-  function handleClick() {
+  function handleClick(event) {
     // block if some other panel is already focused
     if ($focusedPanel) return;
+
+    // Check if the click target is a button or a child of a button
+    let target = event.target;
+    while (target && target !== panelEl) {
+      if (target.tagName === 'BUTTON' || 
+          target.getAttribute('role') === 'button' ||
+          target.classList.contains('button') ||
+          target.closest('button')) {
+        // If clicking on a button, do not enter carousel mode
+        event.stopPropagation();
+        return;
+      }
+      target = target.parentElement;
+    }
 
     /* Send the actual element instead of outerHTML */
     focusedPanel.set(panelEl);
@@ -21,7 +35,7 @@
   
   function handleKeyDown(event) {
     if (event.key === 'Enter' || event.key === ' ') {
-      handleClick();
+      handleClick(event);
       event.preventDefault();
     }
   }

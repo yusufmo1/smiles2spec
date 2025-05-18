@@ -1,7 +1,6 @@
 <script>
   export let peaks = [];
   export let smiles = "";
-  let showAll = false;
   let sortField = "intensity";
   let sortDirection = "desc";
   
@@ -63,10 +62,6 @@
     return customFrags[rounded] || fragmentDescriptions[rounded] || "";
   }
   
-  function toggleShowAll() {
-    showAll = !showAll;
-  }
-  
   function toggleSort(field) {
     if (sortField === field) {
       sortDirection = sortDirection === "asc" ? "desc" : "asc";
@@ -81,18 +76,11 @@
     return factor * (a[sortField] - b[sortField]);
   });
   
-  $: displayPeaks = showAll ? sortedPeaks : sortedPeaks.slice(0, 20);
   $: baseIntensity = peaks.length > 0 ? Math.max(...peaks.map(p => p.intensity)) : 1;
 </script>
 
 <div class="peak-table-container">
   {#if peaks.length > 0}
-    <div class="controls">
-      <button class="pill-button secondary small" on:click={toggleShowAll}>
-        {showAll ? "Show Top 20" : "Show All"}
-      </button>
-    </div>
-  
     <div class="table-wrapper">
       <table class="peak-table">
         <thead>
@@ -110,7 +98,7 @@
           </tr>
         </thead>
         <tbody>
-          {#each displayPeaks as peak, i}
+          {#each sortedPeaks as peak, i}
             <tr>
               <td>{peak.mz.toFixed(2)}</td>
               <td class="intensity-cell">
@@ -142,12 +130,6 @@
     flex-direction: column;
   }
   
-  .controls {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 1rem;
-  }
-  
   .table-wrapper {
     flex: 1;
     overflow: auto;
@@ -155,7 +137,7 @@
     border-radius: var(--enforce-pill);
     background: rgba(255, 255, 255, 0.85);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) inset;
-    overflow: hidden !important;
+    max-height: 220px;
   }
   
   .peak-table {
@@ -180,6 +162,7 @@
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    z-index: 10;
   }
   
   th:first-child {

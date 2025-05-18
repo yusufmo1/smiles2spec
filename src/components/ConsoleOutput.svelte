@@ -25,13 +25,13 @@
     position: relative;
     min-height: 248px;
     border-radius: var(--enforce-pill);
-    overflow: hidden !important;
+    overflow: hidden;
   }
   
   .console-content {
     position: relative;
     height: 100%;
-    min-height: 248px;
+    max-height: 220px;
     padding: 1.25rem;
     background: rgba(255, 255, 255, 0.8);
     border-radius: var(--enforce-pill);
