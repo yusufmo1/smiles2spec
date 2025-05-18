@@ -171,7 +171,6 @@
   .plot-container {
     width: 100%;
     height: 100%;
-    min-height: 340px;
     overflow: hidden;
     flex: 1;
     position: relative;
@@ -180,7 +179,6 @@
   .placeholder {
     width: 100%;
     height: 100%;
-    min-height: 340px;
     display: flex;
     align-items: center;
     justify-content: center;

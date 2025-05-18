@@ -15,7 +15,7 @@
 	import Navbar from './components/Navbar.svelte';
 	import HowItWorks from './components/HowItWorks.svelte';
 	import { predictSpectrum } from './services/api.js';
-	import { isCarouselMode, focusedPanel } from './stores.js';
+	import { isCarouselMode, focusedPanel, carouselIndex } from './stores.js';
 	import { get } from 'svelte/store';
 	
 	// Add responsive design variables
@@ -139,10 +139,15 @@
 			// wait for next tick to ensure DOM is updated
 			await tick();
 			
-			// pick initial slide - first panel is fine
-			const firstPanel = document.querySelector('.panel');
-			if (firstPanel) {
-				focusedPanel.set(firstPanel);
+			// If no panel is focused yet, select the first one
+			if (!$focusedPanel) {
+				const firstPanel = document.querySelector('.panel');
+				if (firstPanel) {
+					focusedPanel.set(firstPanel);
+					
+					// Also set the carousel index to 0 for the first panel
+					carouselIndex.set(0);
+				}
 			}
 		} else {
 			// close overlay
@@ -312,7 +317,6 @@
 		width: 50%;
 		padding: 0 1.5rem;        /* Increased padding from 1rem to 1.5rem for better spacing */
 		margin-bottom: 0;
-		min-height: 340px;
 	}
 	
 	.col-full {

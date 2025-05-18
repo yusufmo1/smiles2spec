@@ -63,7 +63,7 @@ def is_valid_smiles(smi):
         logger.error(f"Error validating SMILES {smi}: {str(e)}")
         return False
 
-def smiles_to_png_base64(smiles: str, w: int = 400, h: int = 300) -> str:
+def smiles_to_png_base64(smiles: str, w: int = 960, h: int = 720) -> str:
     """Convert SMILES string to PNG representation of the molecule encoded as base64.
     
     Args:

@@ -24,8 +24,18 @@
       focusedPanel.set(null);
       isCarouselMode.set(false);
     };
-    const next = () => swiperEl && swiperEl.swiper.slideNext();
-    const prev = () => swiperEl && swiperEl.swiper.slidePrev();
+    const next = () => {
+      if (swiperEl && swiperEl.swiper) {
+        swiperEl.swiper.slideNext();
+        carouselIndex.set(swiperEl.swiper.activeIndex);
+      }
+    };
+    const prev = () => {
+      if (swiperEl && swiperEl.swiper) {
+        swiperEl.swiper.slidePrev();
+        carouselIndex.set(swiperEl.swiper.activeIndex);
+      }
+    };
   
     /* keyboard shortcuts */
     const handleKey = (e) => {
@@ -155,11 +165,6 @@
           
           // Add to our collection
           panels.push({ slide, content, panelClone });
-          
-          // Set the active index to the clicked panel
-          if (allPanels[i] === $focusedPanel) {
-            carouselIndex.set(i);
-          }
         }
         
         // After DOM is updated
@@ -182,6 +187,11 @@
                 { ...originalPlot.layout, autosize: true });
             }
           }
+        }
+        
+        // Initialize with the correct panel
+        if (swiperEl && swiperEl.swiper) {
+          swiperEl.swiper.slideTo($carouselIndex, 0, false);
         }
         
         // After all plots are created, resize the active one

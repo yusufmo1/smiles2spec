@@ -23,7 +23,6 @@
     width: 100%;
     height: 100%;
     position: relative;
-    min-height: 248px;
     border-radius: var(--enforce-pill);
     overflow: hidden;
   }
@@ -31,7 +30,6 @@
   .console-content {
     position: relative;
     height: 100%;
-    max-height: 220px;
     padding: 1.25rem;
     background: rgba(255, 255, 255, 0.8);
     border-radius: var(--enforce-pill);

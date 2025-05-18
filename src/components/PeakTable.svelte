@@ -137,7 +137,8 @@
     border-radius: var(--enforce-pill);
     background: rgba(255, 255, 255, 0.85);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) inset;
-    max-height: 220px;
+    height: 100%;
+    max-height: 100%;
   }
   
   .peak-table {

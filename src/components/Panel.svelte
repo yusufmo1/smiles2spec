@@ -31,6 +31,13 @@
 
     /* Send the actual element instead of outerHTML */
     focusedPanel.set(panelEl);
+    
+    // Find this panel's index among all panels and set the carouselIndex
+    const allPanels = Array.from(document.querySelectorAll('.panel'));
+    const clickedIndex = allPanels.indexOf(panelEl);
+    if (clickedIndex !== -1) {
+      carouselIndex.set(clickedIndex);
+    }
   }
   
   function handleKeyDown(event) {
@@ -67,10 +74,9 @@
   .panel {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 440px;
     width: 100%;
     overflow: hidden !important;
-    min-height: 340px;
     border-radius: var(--enforce-pill);
     position: relative;
     cursor: pointer;
@@ -104,6 +110,8 @@
     backdrop-filter: blur(10px);
     position: relative;
     z-index: 1;
+    height: 65px;
+    box-sizing: border-box;
   }
   
   .title-wrapper {
@@ -134,9 +142,10 @@
     flex: 1;
     padding: 1.75rem;
     overflow: auto;
-    height: 100%;
+    height: calc(340px - 65px);
     position: relative;
     z-index: 1;
+    box-sizing: border-box;
   }
   
   /* Subtle inner glow effect */
