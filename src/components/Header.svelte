@@ -1,11 +1,11 @@
 <script>
-  // No animations or delays
+  export let className = "";
 </script>
 
 <header>
   <div class="title-container">
-    <h1 class="display text-gradient">Spectral Simulation</h1>
-    <p>Enter molecular SMILES notation for spectral analysis</p>
+    <h1 class="display text-gradient {className}">SPECTRAL SIMULATION</h1>
+    <p>Enter SMILES string to predict high-resolution LC-ESI-qTOF mass spectra</p>
   </div>
 </header>
 
@@ -52,5 +52,11 @@
   
   @keyframes title-shift {
     to { background-position: 200% 0; }
+  }
+  
+  :global(.prosto-one-regular) {
+    font-family: "Prosto One", sans-serif !important;
+    font-weight: 400;
+    font-style: normal;
   }
 </style> 

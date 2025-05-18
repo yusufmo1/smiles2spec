@@ -55,6 +55,8 @@ export const defaultConfig = {
   responsive: true,
   displayModeBar: false,
   useResizeHandler: true,
+  autosize: true,
+  style: { width: '100%', height: '100%' },
   toImageButtonOptions: {
     format: 'png',
     filename: 'spectrum_plot',
@@ -68,7 +70,8 @@ export const defaultConfig = {
 export function createLightModePlot(plotElement, data, layout) {
   const lightModeLayout = {
     ...defaultTheme,
-    ...layout
+    ...layout,
+    autosize: true
   };
   
   // Add gradients to bar charts
@@ -84,7 +87,54 @@ export function createLightModePlot(plotElement, data, layout) {
     };
   }
   
-  Plotly.newPlot(plotElement, data, lightModeLayout, defaultConfig);
+  // Ensure the plot element has the correct styles for responsiveness
+  if (plotElement) {
+    plotElement.style.width = '100%';
+    plotElement.style.height = '100%';
+    plotElement.style.minHeight = '300px';
+    
+    // Fix for carousel mode - when in a swiper-slide, we need additional styles
+    if (plotElement.closest('.swiper-slide-content') !== null) {
+      const parentPanel = plotElement.closest('.panel-content');
+      if (parentPanel) {
+        parentPanel.style.display = 'flex';
+        parentPanel.style.flexDirection = 'column';
+        parentPanel.style.flex = '1';
+        parentPanel.style.height = '100%';
+      }
+      
+      // Ensure SVG container is properly sized
+      setTimeout(() => {
+        const svgContainer = plotElement.querySelector('.svg-container');
+        if (svgContainer) {
+          svgContainer.style.width = '100%';
+          svgContainer.style.height = '100%';
+          svgContainer.style.flex = '1';
+        }
+      }, 50);
+    }
+  }
+  
+  // Plotly config with consistent handling
+  const config = {
+    ...defaultConfig,
+    responsive: true,
+    useResizeHandler: true,
+    displayModeBar: false // Consistent across modes
+  };
+  
+  // Let Plotly handle autosize in every context
+  lightModeLayout.autosize = true;
+  config.responsive = true;
+  
+  // Create or update plot
+  if (plotElement.hasChildNodes()) {
+    // Update existing plot
+    Plotly.react(plotElement, data, lightModeLayout, config);
+  } else {
+    // Create new plot
+    Plotly.newPlot(plotElement, data, lightModeLayout, config);
+  }
 }
 
 // Helper function to merge user options with defaults

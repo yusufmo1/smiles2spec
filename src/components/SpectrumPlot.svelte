@@ -2,13 +2,41 @@
   import { onMount, afterUpdate } from 'svelte';
   import Plotly from 'plotly.js-dist-min';
   import { defaultTheme, defaultConfig, createLightModePlot } from '../services/plotlyTheme.js';
+  import { focusedPanel } from '../stores.js';
   
   export let spectrumData = null;
   let plotElement;
+  let isInCarousel = false;
+  
+  // Check if component is in carousel when panel is focused
+  $: isInCarousel = $focusedPanel !== null;
+  
+  // Force re-render when this component is shown in the carousel
+  $: if ($focusedPanel && plotElement && spectrumData) {
+    // Short delay to ensure DOM is ready
+    setTimeout(() => renderPlot(), 100);
+  }
   
   $: if (plotElement && spectrumData) {
     renderPlot();
   }
+  
+  // Handle window resize events for the plot
+  onMount(() => {
+    const handleResize = () => {
+      if (plotElement && spectrumData) {
+        Plotly.relayout(plotElement, {
+          autosize: true
+        });
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  });
   
   function renderPlot() {
     // Filter out zero values for cleaner visualization
@@ -63,15 +91,16 @@
           }
         }
       },
-      height: 340,
-      autosize: true
+      autosize: true,
+      responsive: true,
+      hovermode: 'closest' // Consistent hover behavior
     };
     
     createLightModePlot(plotElement, data, layout);
   }
 </script>
 
-<div>
+<div class="plot-wrapper">
   {#if spectrumData}
     <div bind:this={plotElement} class="plot-container"></div>
   {:else}
@@ -85,15 +114,26 @@
 </div>
 
 <style>
+  .plot-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
   .plot-container {
     width: 100%;
-    height: 340px;
+    height: 100%;
+    min-height: 340px;
     overflow: hidden;
+    flex: 1;
+    position: relative;
   }
   
   .placeholder {
     width: 100%;
-    height: 340px;
+    height: 100%;
+    min-height: 340px;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -2,11 +2,16 @@
   import { onMount, afterUpdate } from 'svelte';
   import Plotly from 'plotly.js-dist-min';
   import { defaultTheme, defaultConfig, createLightModePlot } from '../services/plotlyTheme.js';
+  import { focusedPanel } from '../stores.js';
   
   export let data = null;
   
   let plotElement;
   let topFragments = [];
+  let isInCarousel = false;
+  
+  // Check if component is in carousel when panel is focused
+  $: isInCarousel = $focusedPanel !== null;
   
   $: if (data) {
     processData();
@@ -15,6 +20,29 @@
   $: if (plotElement && topFragments.length > 0) {
     renderPlot();
   }
+  
+  // Force re-render when this component is shown in the carousel
+  $: if ($focusedPanel && plotElement && topFragments.length > 0) {
+    // Short delay to ensure DOM is ready
+    setTimeout(() => renderPlot(), 100);
+  }
+  
+  // Handle window resize events for the plot
+  onMount(() => {
+    const handleResize = () => {
+      if (plotElement && topFragments.length > 0) {
+        Plotly.relayout(plotElement, {
+          autosize: true
+        });
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  });
   
   function processData() {
     // Extract the top 10 fragments by intensity
@@ -109,16 +137,17 @@
         }
       },
       annotations: annotations,
-      height: 340,
       bargap: 0.3,
-      autosize: true
+      autosize: true,
+      responsive: true,
+      hovermode: 'closest' // Consistent hover behavior
     };
     
     createLightModePlot(plotElement, plotData, layout);
   }
 </script>
 
-<div>
+<div class="plot-wrapper">
   {#if topFragments.length > 0}
     <div bind:this={plotElement} class="plot-container"></div>
   {:else}
@@ -132,15 +161,26 @@
 </div>
 
 <style>
+  .plot-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
   .plot-container {
     width: 100%;
-    height: 340px;
+    height: 100%;
+    min-height: 340px;
     overflow: hidden;
+    flex: 1;
+    position: relative;
   }
   
   .placeholder {
     width: 100%;
-    height: 340px;
+    height: 100%;
+    min-height: 340px;
     display: flex;
     align-items: center;
     justify-content: center;

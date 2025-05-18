@@ -11,6 +11,7 @@
 	import StructurePanel from './components/StructurePanel.svelte';
 	import BulkNavigator from './components/BulkNavigator.svelte';
 	import PanelOverlay from './components/PanelOverlay.svelte';
+	import ExportCenter from './components/ExportCenter.svelte';
 	import { predictSpectrum } from './services/api.js';
 	
 	// Add responsive design variables
@@ -126,6 +127,7 @@
 
 <svelte:head>
   <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600&family=SF+Pro+Text:wght@400;500;600&family=SF+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Prosto+One&display=swap" rel="stylesheet">
   <meta name="theme-color" content="#f4f5f7">
 </svelte:head>
 
@@ -133,7 +135,7 @@
 
 <!-- NEW master pill -->
 <div class="app-shell glass-card">
-  <Header />
+  <Header className="prosto-one-regular" />
   
   <div class="body-wrapper">
     <!-- SMILES Input on its own row -->
@@ -198,16 +200,29 @@
     
     <!-- Bottom row with Console Output -->
     <div class="row">
-      <div class="col-full">
+      <div class="col-half">
         <Panel title="ANALYSIS CONSOLE">
           <ConsoleOutput output={consoleText} />
         </Panel>
       </div>
+      <div class="col-half">
+        <!-- Empty panel for symmetry -->
+        <Panel title="EXPORT CENTER">
+          <ExportCenter 
+            spectrumData={spectrumData}
+            peakData={peakData}
+            structurePNG={structurePNG}
+            smiles={currentSmiles}
+            chemicalName={currentName}
+          />
+        </Panel>
+      </div>
     </div>
   </div>
-  
-  <PanelOverlay />
 </div>
+
+<!-- Moved PanelOverlay outside the app-shell -->
+<PanelOverlay />
 
 <style>
 	/* Removed main styles */
@@ -215,7 +230,7 @@
 	/* Outer pill styling */
 	.app-shell {
 		width: 100%;
-		max-width: 1440px;         /* same width you had on <main> */
+		max-width: 90%;           /* Changed from 1440px to 90% to use most of the screen width */
 		margin: 3rem auto;         /* centred with top margin */
 		padding: 3.5rem 3rem 4rem; /* room for header and panels */
 		border-radius: var(--enforce-pill);
@@ -253,14 +268,14 @@
 	
 	.col-half {
 		width: 50%;
-		padding: 0 1rem;
+		padding: 0 1.5rem;        /* Increased padding from 1rem to 1.5rem for better spacing */
 		margin-bottom: 0;
 		min-height: 340px;
 	}
 	
 	.col-full {
 		width: 100%;
-		padding: 0 1rem;
+		padding: 0 1.5rem;        /* Increased padding from 1rem to 1.5rem for consistency */
 	}
 	
 	.container {
@@ -306,7 +321,7 @@
 		}
 		
 		.col-half, .col-full {
-			padding: 0 0.5rem;
+			padding: 0 1rem;      /* Keep 1rem padding on smaller screens */
 		}
 	}
 	
@@ -314,7 +329,36 @@
 	@media (max-width: 640px) {
 		.app-shell {
 			margin: 1rem;
+			max-width: 95%;       /* Use even more width on small screens */
 			padding: 2rem 1.25rem 2.5rem;
 		}
+	}
+
+	/* Extra-large screen adjustments */
+	@media (min-width: 1920px) {
+		.app-shell {
+			max-width: 85%;      /* Slightly smaller percentage on very large screens */
+		}
+		
+		.col-half {
+			padding: 0 2rem;     /* More padding between panels on very large screens */
+		}
+		
+		.col-full {
+			padding: 0 2rem;
+		}
+	}
+	
+	/* Ensure overlay can break out of any container */
+	:global(#app), :global(body), :global(html) {
+		overflow-x: hidden; /* Prevent horizontal scrolling */
+		position: relative;
+	}
+	
+	:global(body), :global(html) {
+		min-height: 100vh;
+		width: 100%;
+		margin: 0;
+		padding: 0;
 	}
 </style>

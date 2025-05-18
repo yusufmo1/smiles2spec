@@ -1,5 +1,5 @@
 <script>
-  import { focusedPanel } from '../stores.js';
+  import { focusedPanel, carouselIndex } from '../stores.js';
   import { onMount } from 'svelte';
 
   export let title = '';
@@ -12,8 +12,11 @@
   });
 
   function handleClick() {
-    // if nothing is focused → focus this one
-    focusedPanel.update(current => current ? current : htmlString);
+    // block if some other panel is already focused
+    if ($focusedPanel) return;
+
+    /* Send the actual element instead of outerHTML */
+    focusedPanel.set(panelEl);
   }
 </script>
 

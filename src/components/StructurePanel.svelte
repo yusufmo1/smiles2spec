@@ -19,12 +19,14 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 340px;
+  height: 100%;
+  min-height: 340px;
   overflow: hidden;
 }
 img {
   max-width: 100%;
-  height: auto;
+  max-height: 100%;
+  object-fit: contain;
 }
 .placeholder{
   display: flex;
