@@ -1,6 +1,6 @@
-# SPEC2SMILES
+# SMILES2SPEC
 
-**Predict high‑resolution EI mass spectra directly from SMILES** – a full‑stack application that couples a trained machine‑learning model (scikit‑learn + RDKit) to a lightweight Flask API and a Svelte single‑page UI.
+**Predict high‑resolution EI mass spectra directly from SMILES** – a full‑stack application that couples a trained machine‑learning model (scikit‑learn + RDKit) to a lightweight Flask API and a Svelte single‑page UI.
 
 ---
 
@@ -8,11 +8,10 @@
 
 | Layer                       | Highlights                                                                                                                                                                                           |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Backend**                 | Flask 2.x REST API & Gunicorn server, on‑the‑fly RDKit featurisation, pretrained scikit‑learn regressor, JSON output with spectrum, peak list, molecular structure SVG and MSP export.               |
-| **Pre‑processing pipeline** | Parallelised (joblib) spectrum featuriser, automatic feature schema builder, variance / NaN filtering, StandardScaler wrapper, artefact writer (`feature_preprocessor.pkl`, `feature_mapping.json`). |
+| **Backend**                 | Flask 2.x REST API & Gunicorn server, on‑the‑fly RDKit featurisation, pretrained scikit‑learn regressor, JSON output with spectrum, peak list, molecular structure SVG and MSP export.               |
+| **Pre‑processing pipeline** | Parallelised (joblib) spectrum featuriser, automatic feature schema builder, variance / NaN filtering, StandardScaler wrapper, artefact writer (`feature_preprocessor.pkl`, `feature_mapping.json`). |
 | **Model**                   | Ready‑to‑use RandomForest intensity regressor (`spectrum_predictor.pkl`).                                                                                                                            |
-| **Frontend**                | Svelte + Plotly.js for interactive spectrum plots, chemical‑structure panel rendered from SVG, bulk SMILES upload (TXT), arrow navigator, MSP download, fully static bundle served by Nginx.         |
-| **Dev Ops**                 | Multi‑arch Docker build (arm64 & amd64), two‑service `docker‑compose`, automatic proxying `/api/*` → backend.                                                                                        |
+| **Frontend**                | Svelte + Plotly.js for interactive spectrum plots, chemical‑structure panel rendered from SVG, bulk SMILES upload (TXT), arrow navigator, MSP download, fully static bundle served by Nginx.         |
 
 ---
 
@@ -28,15 +27,12 @@
 ├── src/                   # Svelte source
 │   └── components/        # UI components
 ├── public/                # Compiled SPA is copied here (public/build)
-├── Dockerfile.backend     # Build Python API image
-├── Dockerfile.frontend    # Build static SPA + nginx image
-├── docker-compose.yml     # One‑shot dev / prod stack
 └── README.md
 ```
 
 ---
 
-## ⚙️  Requirements (manual dev install)
+## ⚙️  Requirements
 
 | Tool   | Tested version |
 | ------ | -------------- |
@@ -44,8 +40,6 @@
 | Node   | 20.x LTS       |
 | RDKit  | 2023.09        |
 | npm    | 10.x           |
-
-> **Tip:** Use the provided Docker setup if you don’t want to compile RDKit locally.
 
 Install Python deps (backend):
 
@@ -63,7 +57,7 @@ npm ci    # installs exact lockfile versions
 
 ---
 
-## 🏃‍♂️  Running locally (no Docker)
+## 🏃‍♂️  Running locally
 
 Backend – dev server with hot‑reload:
 
@@ -83,38 +77,11 @@ Edit `src/services/api.js` if you want to hit a remote backend during dev.
 
 ---
 
-## 🐳  One‑command deployment (Docker Compose)
-
-```bash
-docker compose build
-docker compose up -d      # stack available on http://<host>/
-```
-
-* `backend` image exposes **5050** inside the compose network.
-* `frontend` image (nginx) exposes **80** and proxies `/api/*` to the backend.
-
-Health‑check:
-
-```bash
-curl http://<host>/api/health
-```
-
-### Update & redeploy
-
-```bash
-git pull
-# rebuild only the bit you changed
-docker compose build backend   # or frontend
-docker compose up -d
-```
-
----
-
 ## 🔬  Model provenance & feature pipeline
 
-SMILES in → **RDKit featurisation** (physicochemical descriptors + 7 fingerprint families, **≈ 8 000 raw features**) → variance / NaN filtering → log‑scaling & `StandardScaler` → **RandomForest intensity regressor**.
+SMILES in → **RDKit featurisation** (physicochemical descriptors ≈ 8,000 raw features) → variance / NaN filtering → log‑scaling & `StandardScaler` → **RandomForest intensity regressor**.
 
-The resulting artefacts (`feature_preprocessor.pkl`, `feature_mapping.json`, `spectrum_predictor.pkl`) live in `backend/models/` – you **don’t need to retrain**.
+The resulting artefacts (`feature_preprocessor.pkl`, `feature_mapping.json`, `spectrum_predictor.pkl`) live in `backend/models/` – you **don't need to retrain**.
 
 ---
 
@@ -178,7 +145,7 @@ Multipart upload of a `.txt` file (one SMILES per line) → returns JSON list fo
 
 MIT – see `LICENSE` file.
 
-RDKit binaries are licensed under the BSD 3‑Clause; any spectra data you train on may have its own licence – please check before distribution.
+RDKit binaries are licensed under the BSD 3‑Clause; any spectra data you train on may have its own licence – please check before distribution.
 
 ---
 
