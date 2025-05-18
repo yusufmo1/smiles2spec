@@ -14,8 +14,9 @@
 	import ExportCenter from './components/ExportCenter.svelte';
 	import Navbar from './components/Navbar.svelte';
 	import HowItWorks from './components/HowItWorks.svelte';
+	import SpectraChat from './components/SpectraChat.svelte';
 	import { predictSpectrum } from './services/api.js';
-	import { isCarouselMode, focusedPanel, carouselIndex } from './stores.js';
+	import { isCarouselMode, focusedPanel, carouselIndex, latestSpectrum, latestStructure, latestSmiles } from './stores.js';
 	import { get } from 'svelte/store';
 	
 	// Add responsive design variables
@@ -65,6 +66,11 @@
 			structurePNG = result.structure_png;
 			currentName = result.chemical_name;
 			hasFirstPrediction = true; // Mark that we have at least one successful prediction
+			
+			// Update shared stores for the chat component
+			latestSpectrum.set(spectrumData);
+			latestStructure.set(structurePNG);
+			latestSmiles.set(smiles);
 			
 			// Calculate and report peak statistics
 			const peakCount = peakData.length;
@@ -270,6 +276,8 @@
     </div>
   {:else if currentPage === 'how-it-works'}
     <HowItWorks />
+  {:else if currentPage === 'chat'}
+    <SpectraChat />
   {/if}
 </div>
 
