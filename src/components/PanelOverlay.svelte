@@ -204,6 +204,8 @@
       class="fullscreen-overlay" 
       role="dialog" 
       on:click|self={close} 
+      on:keydown={(e) => e.key === 'Escape' && close()}
+      aria-modal="true"
       transition:fade={{ duration: 400 }}
       on:introstart={handleOverlayOpen}
       on:outroend={handleOverlayClose}

@@ -18,9 +18,24 @@
     /* Send the actual element instead of outerHTML */
     focusedPanel.set(panelEl);
   }
+  
+  function handleKeyDown(event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      handleClick();
+      event.preventDefault();
+    }
+  }
 </script>
 
-<div bind:this={panelEl} class="glass-card panel" on:click={handleClick}>
+<div 
+  bind:this={panelEl} 
+  class="glass-card panel" 
+  on:click={handleClick}
+  on:keydown={handleKeyDown}
+  tabindex="0"
+  role="button"
+  aria-label={title ? `Expand ${title} panel` : 'Expand panel'}
+>
   {#if title}
     <header>
       <div class="title-wrapper">
@@ -44,6 +59,22 @@
     min-height: 340px;
     border-radius: var(--enforce-pill);
     position: relative;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .panel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  .panel:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  
+  .panel:focus:not(:focus-visible) {
+    outline: none;
   }
   
   header {

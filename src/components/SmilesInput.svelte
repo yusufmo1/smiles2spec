@@ -145,10 +145,15 @@
 
 <!-- Upload Modal -->
 {#if showUploadModal}
-  <div class="modal-overlay" on:click={closeUploadModal}>
+  <div class="modal-overlay" 
+       on:click={closeUploadModal}
+       on:keydown={(e) => e.key === 'Escape' && closeUploadModal()}
+       role="dialog"
+       aria-modal="true">
     <div class="upload-modal glass-card" 
          class:drag-active={dragActive}
          on:click|stopPropagation={() => {}}
+         on:keydown|stopPropagation={() => {}}
          on:dragenter={handleDragEnter}
          on:dragover={handleDragOver}
          on:dragleave={handleDragLeave}

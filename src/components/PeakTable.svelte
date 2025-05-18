@@ -29,9 +29,38 @@
     105: "C₈H₉• (Methyltropylium)"
   };
   
+  // Custom fragment descriptions for specific SMILES patterns (could be expanded)
+  function getCustomFragments() {
+    if (!smiles) return {};
+    
+    const customFragments = {};
+    
+    // Check for common functional groups based on SMILES
+    if (smiles.includes("O")) {
+      // Compounds with oxygen might have these fragments
+      customFragments[31] = "CH₂OH• (Hydroxymethyl)";
+      customFragments[45] = "CH₃CHOH• (Ethanol fragment)";
+    }
+    
+    if (smiles.includes("N")) {
+      // Compounds with nitrogen might have these fragments
+      customFragments[30] = "CH₂NH₂• (Aminomethyl)";
+      customFragments[44] = "C₂H₄NH₂ (Aminoethyl)";
+    }
+    
+    if (smiles.includes("c1ccccc1")) {
+      // Compounds with benzene rings
+      customFragments[77] = "C₆H₅• (Phenyl)";
+      customFragments[91] = "C₇H₇• (Benzyl/Tropylium)";
+    }
+    
+    return customFragments;
+  }
+  
   function getFragmentDescription(mz) {
     const rounded = Math.round(mz);
-    return fragmentDescriptions[rounded] || "";
+    const customFrags = getCustomFragments();
+    return customFrags[rounded] || fragmentDescriptions[rounded] || "";
   }
   
   function toggleShowAll() {

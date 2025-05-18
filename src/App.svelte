@@ -179,8 +179,6 @@
         <BulkNavigator name={currentName}
                        index={bulkList.length ? idx+1 : 0}
                        total={bulkList.length}
-                       smilesList={bulkList}
-                       currentSmiles={currentSmiles}
                        on:prev={() => nav(-1)}
                        on:next={() => nav(1)}/>
       </div>
@@ -242,6 +240,7 @@
             structurePNG={structurePNG}
             smiles={currentSmiles}
             chemicalName={currentName}
+            smilesList={bulkList}
           />
         </Panel>
       </div>
@@ -274,11 +273,6 @@
 		overflow: visible;         /* keep drop-shadows of inner panels */
 	}
 
-	/* Optional: make header text follow pill curve slightly */
-	.app-shell header {
-		margin-top: -0.5rem;
-	}
-
 	/* Container that holds rows/cols */
 	.body-wrapper {
 		display: flex;
@@ -304,12 +298,6 @@
 	.col-full {
 		width: 100%;
 		padding: 0 1.5rem;        /* Increased padding from 1rem to 1.5rem for consistency */
-	}
-	
-	.container {
-		width: 100%;
-		padding: 0;
-		overflow: visible;
 	}
 	
 	/* Error message */
