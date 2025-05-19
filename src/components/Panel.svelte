@@ -61,7 +61,7 @@
     <header>
       <div class="title-wrapper">
         <span class="title-dot"></span>
-        <h2>{title}</h2>
+        <h2 class="prosto-one-regular">{title}</h2>
       </div>
     </header>
   {/if}

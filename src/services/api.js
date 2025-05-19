@@ -48,7 +48,7 @@ export async function uploadSmilesFile(file) {
   return res.json();        // { smiles: [...] }
 }
 
-export async function chatWithSpectra(messages) {
+export async function chatWithSpectrum(messages) {
   const res = await fetch(`${API_URL}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -56,4 +56,22 @@ export async function chatWithSpectra(messages) {
   });
   if (!res.ok) throw new Error("Chat request failed");
   return res.json();        // { message: "response text" }
+}
+
+export async function generateSmiles(options = {}) {
+  const { count = 1, description = '' } = options;
+  
+  const response = await fetch(`${API_URL}/api/generate_smiles`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ count, description }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to generate SMILES');
+  }
+  
+  return response.json(); // { smiles: ["...", "..."] }
 } 

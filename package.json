@@ -26,6 +26,7 @@
     "plotly.js-dist-min": "^3.0.1",
     "sirv-cli": "^2.0.0",
     "svelte-transitions": "^1.2.0",
-    "swiper": "^11.2.6"
+    "swiper": "^11.2.6",
+    "talkjs": "^0.37.0"
   }
 }

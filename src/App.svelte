@@ -14,7 +14,7 @@
 	import ExportCenter from './components/ExportCenter.svelte';
 	import Navbar from './components/Navbar.svelte';
 	import HowItWorks from './components/HowItWorks.svelte';
-	import ChatWithSpectra from './components/ChatWithSpectra.svelte';
+	import ChatWithSpectrum from './components/ChatWithSpectrum.svelte';
 	import { predictSpectrum } from './services/api.js';
 	import { isCarouselMode, focusedPanel, carouselIndex } from './stores.js';
 	import { get } from 'svelte/store';
@@ -255,8 +255,8 @@
           </Panel>
         </div>
         <div class="col-half">
-          <Panel title="CHAT WITH SPECTRA">
-            <ChatWithSpectra />
+          <Panel title="CHAT WITH SPECTRUM">
+            <ChatWithSpectrum hasSmilesPrediction={hasFirstPrediction} />
           </Panel>
         </div>
       </div>

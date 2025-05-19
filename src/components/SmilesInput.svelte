@@ -9,7 +9,11 @@
   let isFocused = false;
   let fileChooser;
   let showUploadModal = false;
+  let showGenerateModal = false;
   let dragActive = false;
+  let isGenerating = false;
+  let smilesCount = 1;
+  let smilesDescription = '';
   
   function handleSubmit() {
     if (!smiles.trim() || isLoading) return;
@@ -34,6 +38,14 @@
   function closeUploadModal() {
     showUploadModal = false;
     dragActive = false;
+  }
+  
+  function openGenerateModal() {
+    showGenerateModal = true;
+  }
+  
+  function closeGenerateModal() {
+    showGenerateModal = false;
   }
   
   function handleDragEnter(e) {
@@ -91,6 +103,42 @@
     processFile(file);
   }
   
+  async function generateRandomSmiles() {
+    try {
+      isGenerating = true;
+      const { generateSmiles } = await import('../services/api.js');
+      const result = await generateSmiles({ 
+        count: smilesCount, 
+        description: smilesDescription 
+      });
+      
+      // For multiple SMILES, either use the first one or join with dots
+      if (result.smiles.length > 0) {
+        if (smilesCount === 1 || document.getElementById('auto-analyze-checkbox').checked) {
+          // Use the first SMILES if auto-analyzing
+          smiles = result.smiles[0];
+        } else {
+          // Join multiple SMILES with dots for bulk processing
+          smiles = result.smiles.join('.');
+        }
+      }
+      
+      closeGenerateModal();
+      
+      // Auto-submit if user wants and only generating a single SMILES
+      if (document.getElementById('auto-analyze-checkbox').checked && smilesCount === 1) {
+        handleSubmit();
+      } else if (document.getElementById('auto-analyze-checkbox').checked && smilesCount > 1) {
+        // For multiple SMILES with auto-analyze, dispatch as bulk
+        dispatch('bulk', { list: result.smiles });
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      isGenerating = false;
+    }
+  }
+  
   onMount(() => {
     if (inputElement) inputElement.focus();
   });
@@ -111,6 +159,13 @@
       aria-label="SMILES notation input"
     />
   </div>
+  
+  <!-- Magic Wand button -->
+  <button class="pill-button generate"
+          aria-label="Generate SMILES"
+          on:click={openGenerateModal}>
+    <span class="wand-emoji">🪄</span>
+  </button>
   
   <!-- Upload button -->
   <button class="pill-button upload"
@@ -179,6 +234,81 @@
           <p class="help-text">
             For TXT files: Each line should contain a single SMILES string.<br>
             For CSV files: First column should contain SMILES strings.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Generate SMILES Modal -->
+{#if showGenerateModal}
+  <div class="modal-overlay" 
+       on:click={closeGenerateModal}
+       on:keydown={(e) => e.key === 'Escape' && closeGenerateModal()}
+       role="dialog"
+       aria-modal="true">
+    <div class="generate-modal glass-card" 
+         on:click|stopPropagation={() => {}}
+         on:keydown|stopPropagation={() => {}}>
+      
+      <button class="close-button" on:click={closeGenerateModal}>×</button>
+      
+      <div class="generate-content">
+        <h3>Generate Random SMILES</h3>
+        
+        <div class="generate-area">
+          <span class="wand-emoji-large">🪄</span>
+          
+          <p>Generate a random molecule with valid SMILES notation</p>
+          
+          <div class="slider-container">
+            <label for="smiles-count">Number of SMILES to generate: <span class="count-value">{smilesCount}</span></label>
+            <input 
+              type="range" 
+              id="smiles-count" 
+              min="1" 
+              max="10" 
+              step="1" 
+              bind:value={smilesCount} 
+            />
+            <div class="range-labels">
+              <span>1</span>
+              <span>5</span>
+              <span>10</span>
+            </div>
+          </div>
+          
+          <div class="description-container">
+            <label for="smiles-description">Describe the type of molecule (optional):</label>
+            <input 
+              type="text" 
+              id="smiles-description" 
+              placeholder="e.g., 'a drug-like molecule with a benzene ring'" 
+              bind:value={smilesDescription} 
+            />
+            <p class="description-help">Adding a description may use AI to generate more relevant structures</p>
+          </div>
+          
+          <div class="checkbox-container">
+            <input type="checkbox" id="auto-analyze-checkbox" checked>
+            <label for="auto-analyze-checkbox">Analyze immediately after generation</label>
+          </div>
+          
+          <button class="generate-button" on:click={generateRandomSmiles} disabled={isGenerating}>
+            {#if isGenerating}
+              <span class="loading-indicator"></span>
+              <span>Generating...</span>
+            {:else}
+              <span>Generate {smilesCount > 1 ? `${smilesCount} SMILES` : 'Random SMILES'}</span>
+            {/if}
+          </button>
+          
+          <p class="help-text">
+            This will create {smilesCount > 1 ? `${smilesCount} random` : 'a random'}, chemically valid molecular structure{smilesCount > 1 ? 's' : ''}.
+            {#if smilesCount > 1}
+              <br>Multiple structures will be treated as a batch.
+            {/if}
           </p>
         </div>
       </div>
@@ -276,6 +406,28 @@
       0 6px 18px rgba(120, 121, 255, 0.25),
       0 0 0 1px rgba(255, 255, 255, 0.1);
   }
+  
+  .generate {
+    background: #9c27b0; /* Purple color for wand button */
+    padding: 0.65rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .wand-emoji {
+    font-size: 1.5rem;
+    line-height: 1;
+  }
+  
+  .wand-emoji-large {
+    font-size: 3rem;
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+  
+  .generate:hover { background: #7b1fa2; }
+  .generate svg { pointer-events: none; }
   
   .upload {
     background: var(--accent-secondary);
@@ -499,5 +651,185 @@
       padding: 2rem 1rem;
       min-height: 200px;
     }
+  }
+  
+  /* Generate SMILES Modal Styles */
+  .generate-modal {
+    background: rgba(255, 255, 255, 0.9);
+    width: 90%;
+    max-width: 650px;
+    min-height: 350px;
+    padding: 2.5rem;
+    border-radius: var(--enforce-pill);
+    position: relative;
+    box-shadow: 
+      0 15px 50px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(255, 255, 255, 0.1);
+    animation: slideUp 0.3s ease-out;
+    overflow: hidden;
+  }
+  
+  .generate-modal::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 30%;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.5),
+      rgba(255, 255, 255, 0.1)
+    );
+    z-index: -1;
+  }
+  
+  .generate-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .generate-area {
+    border: 2px dashed #9c27b0;
+    border-radius: 1rem;
+    padding: 3rem;
+    width: 100%;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+  
+  .generate-button {
+    background: #9c27b0;
+    color: white;
+    border: none;
+    border-radius: var(--enforce-pill);
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(156, 39, 176, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+  
+  .generate-button:hover:not(:disabled) {
+    background: #7b1fa2;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(156, 39, 176, 0.4);
+  }
+  
+  .generate-button:disabled {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-tertiary);
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  
+  .checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  
+  .slider-container {
+    width: 100%;
+    margin: 1.5rem 0;
+  }
+  
+  .slider-container label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  
+  .count-value {
+    color: #9c27b0;
+    font-weight: bold;
+  }
+  
+  input[type="range"] {
+    width: 100%;
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(to right, #9c27b0 0%, #7b1fa2 100%);
+    border-radius: 5px;
+    outline: none;
+  }
+  
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    border: 2px solid #9c27b0;
+  }
+  
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    cursor: pointer;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+    border: 2px solid #9c27b0;
+  }
+  
+  .range-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+  }
+  
+  .description-container {
+    width: 100%;
+    margin: 1.5rem 0;
+  }
+  
+  .description-container label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  
+  #smiles-description {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    border: 2px solid rgba(156, 39, 176, 0.3);
+    background: rgba(255, 255, 255, 0.9);
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+  }
+  
+  #smiles-description:focus {
+    border-color: #9c27b0;
+    box-shadow: 0 0 10px rgba(156, 39, 176, 0.3);
+    outline: none;
+  }
+  
+  .description-help {
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    margin-top: 0.5rem;
+    font-style: italic;
   }
 </style> 
