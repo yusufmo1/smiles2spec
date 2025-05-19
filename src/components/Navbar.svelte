@@ -34,13 +34,6 @@
           How It Works
         </button>
       </li>
-      <li>
-        <button 
-          class={activePage === 'chat' ? 'active' : ''} 
-          on:click={() => handleNavClick('chat')}>
-          Chat with Spectra
-        </button>
-      </li>
     </ul>
   </div>
 </nav>

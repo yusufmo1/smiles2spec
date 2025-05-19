@@ -152,3 +152,38 @@ RDKit binaries are licensed under the BSD 3‑Clause; any spectra data you train
 ## 🙏  Acknowledgements
 
 Built with **RDKit**, **scikit‑learn**, **Svelte** and **Plotly.js**. Many thanks to their respective communities.
+
+## Chat with Spectra
+
+The Chat with Spectra feature provides an interactive chat interface integrated directly into the main application interface to help with:
+
+- Understanding mass spectrometry concepts
+- Interpreting SMILES notation
+- Learning about chemical structures
+- Getting explanations about spectral data
+
+### How It Works
+
+The chat interface connects to a language model backend that has been specialized in chemistry and mass spectrometry concepts. Users can ask questions about:
+
+1. General chemistry concepts
+2. SMILES notation interpretation
+3. Mass spectrometry principles
+4. Interpretation of spectral data
+5. Chemical compound information
+
+### Using the Chat
+
+1. Find the "CHAT WITH SPECTRA" panel on the main interface
+2. Type your question in the input box at the bottom of the panel
+3. Press Enter or click the send button
+4. Receive a response from Spectra directly within the panel
+
+### Future Enhancements
+
+Planned enhancements for the Chat with Spectra feature include:
+
+- Integration with your current spectrum data for contextualized answers
+- File upload capabilities for spectral data interpretation
+- Export of chat conversations for documentation
+- Multi-language support

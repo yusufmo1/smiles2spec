@@ -14,9 +14,9 @@
 	import ExportCenter from './components/ExportCenter.svelte';
 	import Navbar from './components/Navbar.svelte';
 	import HowItWorks from './components/HowItWorks.svelte';
-	import SpectraChat from './components/SpectraChat.svelte';
+	import ChatWithSpectra from './components/ChatWithSpectra.svelte';
 	import { predictSpectrum } from './services/api.js';
-	import { isCarouselMode, focusedPanel, carouselIndex, latestSpectrum, latestStructure, latestSmiles } from './stores.js';
+	import { isCarouselMode, focusedPanel, carouselIndex } from './stores.js';
 	import { get } from 'svelte/store';
 	
 	// Add responsive design variables
@@ -66,11 +66,6 @@
 			structurePNG = result.structure_png;
 			currentName = result.chemical_name;
 			hasFirstPrediction = true; // Mark that we have at least one successful prediction
-			
-			// Update shared stores for the chat component
-			latestSpectrum.set(spectrumData);
-			latestStructure.set(structurePNG);
-			latestSmiles.set(smiles);
 			
 			// Calculate and report peak statistics
 			const peakCount = peakData.length;
@@ -252,7 +247,7 @@
         </div>
       </div>
       
-      <!-- Bottom row with Console Output -->
+      <!-- Bottom row with Console Output and Chat -->
       <div class="row">
         <div class="col-half">
           <Panel title="ANALYSIS CONSOLE">
@@ -260,7 +255,15 @@
           </Panel>
         </div>
         <div class="col-half">
-          <!-- Empty panel for symmetry -->
+          <Panel title="CHAT WITH SPECTRA">
+            <ChatWithSpectra />
+          </Panel>
+        </div>
+      </div>
+      
+      <!-- Export Center row -->
+      <div class="row">
+        <div class="col-full">
           <Panel title="EXPORT CENTER">
             <ExportCenter 
               spectrumData={spectrumData}
@@ -276,8 +279,6 @@
     </div>
   {:else if currentPage === 'how-it-works'}
     <HowItWorks />
-  {:else if currentPage === 'chat'}
-    <SpectraChat />
   {/if}
 </div>
 

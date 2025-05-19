@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import os
 import json
+import requests
 from prediction_service import PredictionService
 from config import API_CONFIG
 from utils import logger, convert_np_to_list, smiles_to_png_base64
@@ -179,6 +180,77 @@ def smiles_bulk():
         # Default TXT processing - one SMILES per line
         smiles = [ln.split()[0].strip() for ln in content.splitlines() if ln.strip()]
         return jsonify({"smiles": smiles})
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """
+    API endpoint for chat functionality.
+    Accepts messages in the format: 
+    { "messages": [{"role": "user"|"assistant", "content": "message"}] }
+    """
+    try:
+        data = request.json
+        messages = data.get('messages', [])
+        
+        if not messages:
+            return jsonify({"error": "No messages provided"}), 400
+        
+        # Default system message to provide context about the application
+        system_message = {
+            "role": "system", 
+            "content": """You are Spectra, an AI assistant specialized in mass spectrometry, chemistry, 
+            and molecular structures. You can help with interpreting mass spectra, explaining SMILES 
+            notation, and providing information about chemical compounds. Be helpful, clear, and 
+            provide detailed explanations when discussing chemical compounds, SMILES notation, and 
+            mass spectrometry data. When you don't know something, admit it rather than making up
+            information."""
+        }
+        
+        # Construct the final message list with the system message first
+        final_messages = [system_message] + messages
+        
+        # If you're using OpenAI or similar API directly, uncomment and use the code below
+        # response = requests.post(
+        #     "https://api.openai.com/v1/chat/completions",
+        #     headers={
+        #         "Content-Type": "application/json",
+        #         "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"
+        #     },
+        #     json={
+        #         "model": "gpt-3.5-turbo",
+        #         "messages": final_messages,
+        #         "temperature": 0.7
+        #     }
+        # )
+        # 
+        # if response.status_code != 200:
+        #     return jsonify({"error": "Failed to get response from model API"}), 500
+        # 
+        # result = response.json()
+        # message = result["choices"][0]["message"]["content"]
+        
+        # For now, use a mock response for testing
+        user_message = next((msg["content"] for msg in messages if msg["role"] == "user"), "")
+        message = generate_mock_response(user_message)
+        
+        return jsonify({"message": message})
+    except Exception as e:
+        logger.error(f"Chat API error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+def generate_mock_response(message):
+    """
+    Generates a mock response for testing purposes.
+    In production, replace this with your actual AI model integration.
+    """
+    if "SMILES" in message or "smiles" in message:
+        return "SMILES (Simplified Molecular Input Line Entry System) is a notation that allows you to represent chemical structures as text strings. It's used for storing and sharing molecular information. For example, 'CC' represents ethane, while 'C1=CC=CC=C1' represents benzene."
+    elif "mass spec" in message.lower() or "spectrum" in message.lower():
+        return "Mass spectrometry works by ionizing chemical samples and measuring the mass-to-charge ratio of the ions. The data is typically presented as a mass spectrum - a plot of ion signal vs. mass-to-charge ratio. The peaks in the spectrum represent different fragments of the original molecule."
+    elif "hello" in message.lower() or "hi" in message.lower():
+        return "Hello! I'm Spectra, your spectral analysis assistant. How can I help you today with mass spectrometry, SMILES notation, or chemical structures?"
+    else:
+        return "I understand you're asking about chemistry or spectral analysis. Could you provide more specific details about what you'd like to know? I can help with interpreting mass spectra, explaining SMILES notation, or discussing chemical structures."
 
 @app.route('/', methods=['GET'])
 def home():

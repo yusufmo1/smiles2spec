@@ -6,3 +6,5 @@ backend/models/spectrum_predictor.pkl
 .venv
 .vscode
 .cursorignore
+.env
+.gitignore
