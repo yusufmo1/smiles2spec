@@ -19,6 +19,9 @@
     let initialized = false;
     let panels = []; // Array to store panel elements
     
+    // lifeboats to re-insert panels later
+    let originals = [];   // array of { node, parent, next }
+    
     // Helpers
     const close = () => {
       focusedPanel.set(null);
@@ -145,64 +148,91 @@
       }, 300);
     };
 
-    // Function to handle the opening of the overlay
-    const handleOverlayOpen = async () => {
-      if ($focusedPanel) {
-        // Collect all panels for the carousel
-        const allPanels = Array.from(document.querySelectorAll('.panel'));
-        panels = [];
-        
-        // Create slots for each panel
-        for (let i = 0; i < allPanels.length; i++) {
-          const slide = document.createElement('swiper-slide');
-          const content = document.createElement('div');
-          content.className = 'swiper-slide-content glass-card';
-          slide.appendChild(content);
-          swiperEl.appendChild(slide);
+    // Helper function to create an event delegator for carousel content
+    function delegateClickEvents(cloneElement, originalElement) {
+      // Find all buttons in the cloned element
+      const buttons = cloneElement.querySelectorAll('button, textarea, input');
+      const origButtons = originalElement.querySelectorAll('button, textarea, input');
+      
+      buttons.forEach((button, index) => {
+        if (index < origButtons.length) {
+          // Make clone button look clickable
+          button.style.pointerEvents = 'auto';
+          button.style.cursor = 'pointer';
           
-          // Clone the panel and its children deeply
-          const panelClone = allPanels[i].cloneNode(true);
-          
-          // Add to our collection
-          panels.push({ slide, content, panelClone });
-        }
-        
-        // After DOM is updated
-        await tick();
-        
-        // Move all panel clones to their slides
-        for (let i = 0; i < panels.length; i++) {
-          panels[i].content.appendChild(panels[i].panelClone);
-        }
-        
-        // For each panel with a Plotly plot, we need to re-create the plot
-        for (let i = 0; i < panels.length; i++) {
-          const plotDiv = panels[i].panelClone.querySelector('.js-plotly-plot');
-          if (plotDiv) {
-            // Find the original plot div
-            const originalPlot = allPanels[i].querySelector('.js-plotly-plot');
-            if (originalPlot && originalPlot.data) {
-              // Re-create the plot using the same data and layout
-              Plotly.newPlot(plotDiv, originalPlot.data, 
-                { ...originalPlot.layout, autosize: true });
+          // Add a click handler that triggers the original button's click
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Trigger click on original button
+            origButtons[index].click();
+            
+            // For ChatWithSpectrum, find the closest textarea and sync its value
+            if (button.classList.contains('send')) {
+              const cloneTextarea = button.closest('.composer')?.querySelector('textarea');
+              const origTextarea = origButtons[index].closest('.composer')?.querySelector('textarea');
+              
+              if (cloneTextarea && origTextarea) {
+                // Sync textarea value from clone to original
+                origTextarea.value = cloneTextarea.value;
+                // Clear clone textarea
+                cloneTextarea.value = '';
+              }
             }
+          });
+          
+          // For text inputs/textareas, sync their values between original and clone
+          if (button.tagName === 'TEXTAREA' || button.tagName === 'INPUT') {
+            button.addEventListener('input', (e) => {
+              origButtons[index].value = button.value;
+            });
           }
         }
-        
-        // Initialize with the correct panel
-        if (swiperEl && swiperEl.swiper) {
-          swiperEl.swiper.slideTo($carouselIndex, 0, false);
+      });
+    }
+
+    const handleOverlayOpen = async () => {
+        if (!$focusedPanel) return;
+
+        const all = [...document.querySelectorAll('.panel')];
+        panels = []; originals = [];
+
+        for (const p of all) {
+            const slide = document.createElement('swiper-slide');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'swiper-slide-content glass-card';
+            slide.appendChild(wrapper);
+            swiperEl.appendChild(slide);
+
+            /* remember where it came from */
+            originals.push({ node: p, parent: p.parentElement, next: p.nextSibling });
+
+            /* clone so the grid version never disappears */
+            const clone = p.cloneNode(true);
+            wrapper.appendChild(clone);
+            
+            // Delegate click events from clone to original for interactive elements
+            delegateClickEvents(clone, p);
+
+            panels.push({ slide, wrapper, node: clone });
         }
-        
-        // After all plots are created, resize the active one
+
+        await tick();
+        swiperEl.swiper?.slideTo($carouselIndex, 0, false);
         resizePlotlyCharts();
-      }
     };
-    
-    // Function to handle the closing of the overlay
+
     const handleOverlayClose = () => {
-      // Clear the panel clones
-      panels = [];
+        /* give Plotly a nudge */
+        requestAnimationFrame(() => {
+            document
+                .querySelectorAll('.js-plotly-plot')
+                .forEach((el) => Plotly.Plots.resize(el));
+        });
+        
+        originals = [];
+        panels = [];
     };
   </script>
   
@@ -270,6 +300,22 @@
     /* Ensure consistent box-sizing for all elements */
     :global(.fullscreen-overlay *) {
       box-sizing: border-box;
+    }
+    
+    /* Add global styles for swiper slide content */
+    :global(.swiper-slide-content .panel-content),
+    :global(.swiper-slide-content .plot-wrapper),
+    :global(.swiper-slide-content .plot-container) {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      height: 100%;
+    }
+    
+    :global(.swiper-slide-content .svg-container) {
+      width: 100% !important;
+      height: 100% !important;
+      flex: 1 !important;
     }
   
     .fullscreen-overlay {
@@ -391,18 +437,23 @@
         0 25px 60px rgba(0, 0, 0, 0.15),
         0 0 0 1px rgba(255, 255, 255, 0.5);
       transition: all var(--transition-smooth);
+      /* Ensure interactive components can work properly inside slides */
+      isolation: isolate;
     }
     
     :global(.swiper-slide-content .panel) {
       display: flex;
       flex-direction: column;
       flex: 1;
+      position: relative;
+      z-index: 5;
+      isolation: isolate;
     }
     
-    :global(.swiper-slide-content .panel-content) {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+    /* Ensure chat component in panels works properly */
+    :global(.swiper-slide-content .chat-window) {
+      position: relative;
+      z-index: 5;
     }
     
     :global(.swiper-slide-content .panel-content > *) {

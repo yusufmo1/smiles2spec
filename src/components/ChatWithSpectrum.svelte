@@ -1,361 +1,287 @@
 <script>
-  import { onMount } from 'svelte';
-  import { writable } from 'svelte/store';
-  import { chatWithSpectrum } from '../services/api.js';
-  
-  // Get access to the hasFirstPrediction state
-  export let hasSmilesPrediction = false;
-  
-  // Chat message store
-  const messages = writable([
-    { 
-      id: 1, 
-      avatar: "/assets/images/spectra-avatar.png",
-      name: "Spectrum", 
-      message: "Hello! I'm Spectrum, your spectral analysis assistant. Ask me about molecular structures, SMILES notation, or help interpreting mass spectra.", 
-      timestamp: new Date().toISOString(),
-      type: "assistant"
-    }
-  ]);
-  
-  let userMessage = '';
-  let chatElement;
-  let loading = false;
-  
-  // Scroll to bottom when messages update
-  $: if (chatElement && $messages) {
-    setTimeout(() => {
-      chatElement.scrollTo({ top: chatElement.scrollHeight, behavior: 'smooth' });
-    }, 50);
-  }
-  
-  async function handleSend() {
-    if (!userMessage.trim() || loading) return;
-    
-    // Add user message
-    const userMsg = {
-      id: $messages.length + 1,
-      avatar: "/assets/images/user-avatar.png",
-      name: "You",
-      message: userMessage,
-      timestamp: new Date().toISOString(),
-      type: "user"
-    };
-    
-    messages.update(msgs => [...msgs, userMsg]);
-    
-    // Clear input
-    const tempMessage = userMessage;
-    userMessage = '';
-    loading = true;
-    
-    try {
-      // Show "thinking" message
-      messages.update(msgs => [
-        ...msgs,
-        {
-          id: $messages.length + 1,
-          avatar: "/assets/images/spectra-avatar.png",
-          name: "Spectrum",
-          message: "Thinking...",
-          timestamp: new Date().toISOString(),
-          type: "assistant",
-          thinking: true
-        }
-      ]);
-      
-      // Use our API service to get Spectrum's response
-      const result = await chatWithSpectrum(
-        buildMessageHistory($messages.filter(m => !m.thinking))
-      );
-      
-      // Remove the thinking message
-      messages.update(msgs => msgs.filter(m => !m.thinking));
-      
-      // Add the bot's response
-      const botMsg = {
-        id: $messages.length + 1,
-        avatar: "/assets/images/spectra-avatar.png",
-        name: "Spectrum",
-        message: result.message,
-        timestamp: new Date().toISOString(),
-        type: "assistant"
-      };
-      
-      messages.update(msgs => [...msgs, botMsg]);
-    } catch (error) {
-      console.error('Error:', error);
-      messages.update(msgs => [
-        ...msgs.filter(m => !m.thinking),
-        {
-          id: $messages.length + 1,
-          avatar: "/assets/images/spectra-avatar.png",
-          name: "Spectrum",
-          message: "Sorry, I encountered an error. Please try again.",
-          timestamp: new Date().toISOString(),
-          type: "assistant"
-        }
-      ]);
-    } finally {
-      loading = false;
-    }
-  }
-  
-  function buildMessageHistory(messages) {
-    return messages.map(msg => ({
-      role: msg.type,
-      content: msg.message
-    }));
-  }
-  
-  function handleKeyDown(event) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      handleSend();
-    }
-  }
+	import { writable } from 'svelte/store';
+	import { chatWithSpectrum } from '../services/api';
+
+	export let hasSmilesPrediction = false;
+
+	/**
+	 * @typedef {Object} Message
+	 * @property {number} id
+	 * @property {string} avatar
+	 * @property {string} name
+	 * @property {string} message
+	 * @property {string} timestamp
+	 * @property {string} type
+	 * @property {boolean} [thinking]
+	 */
+
+	/**
+	 * @typedef {Object} ApiMessage
+	 * @property {string} role
+	 * @property {string} content
+	 */
+
+	/* message store ------------------------------------------------------- */
+	/** @type {import('svelte/store').Writable<Message[]>} */
+	const messages = writable([
+		{
+			id: 1,
+			avatar: '/assets/images/spectra-avatar.png',
+			name: 'Spectrum',
+			message:
+				"Hello! I'm Spectrum, your spectral-analysis assistant – ask me anything about SMILES or these spectra.",
+			timestamp: new Date().toISOString(),
+			type: 'assistant'
+		}
+	]);
+
+	/* local state --------------------------------------------------------- */
+	let userMessage = '';
+	/** @type {HTMLDivElement} */
+	let chatEl;
+	let loading = false;
+	
+	/* computed values ----------------------------------------------------- */
+	$: canSend = userMessage.trim().length > 0 && !loading;
+
+	/* helpers ------------------------------------------------------------- */
+	const scrollToBottom = () =>
+		setTimeout(() => chatEl?.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' }), 40);
+
+	$: scrollToBottom();               // whenever $messages changes
+
+	async function send() {
+		if (!userMessage.trim() || loading) return;
+
+		/* push user bubble */
+		const userId = Date.now();
+		messages.update((m) => [
+			...m,
+			{
+				id: userId,
+				avatar: '/assets/images/user-avatar.png',
+				name: 'You',
+				message: userMessage,
+				timestamp: new Date().toISOString(),
+				type: 'user'
+			}
+		]);
+
+		/** @type {ApiMessage[]} */
+		const history = $messages.map(({ type, message }) => ({ role: type, content: message }));
+		userMessage = '';
+		loading = true;
+
+		/* optimistic "thinking…" bubble */
+		messages.update((m) => [
+			...m,
+			{
+				id: userId + 1,
+				avatar: '/assets/images/spectra-avatar.png',
+				name: 'Spectrum',
+				message: 'Thinking…',
+				timestamp: new Date().toISOString(),
+				type: 'assistant',
+				thinking: true
+			}
+		]);
+
+		try {
+			const { message } = await chatWithSpectrum(history);
+			messages.update((m) => m.filter((x) => !x.thinking));
+			messages.update((m) => [
+				...m,
+				{
+					id: userId + 2,
+					avatar: '/assets/images/spectra-avatar.png',
+					name: 'Spectrum',
+					message,
+					timestamp: new Date().toISOString(),
+					type: 'assistant'
+				}
+			]);
+		} catch (e) {
+			messages.update((m) => m.filter((x) => !x.thinking));
+			messages.update((m) => [
+				...m,
+				{
+					id: userId + 2,
+					avatar: '/assets/images/spectra-avatar.png',
+					name: 'Spectrum',
+					message: 'Sorry – something went wrong. Try again?',
+					timestamp: new Date().toISOString(),
+					type: 'assistant'
+				}
+			]);
+		} finally {
+			loading = false;
+		}
+	}
+
+	/**
+	 * @param {KeyboardEvent} e
+	 */
+	function handleKey(e) {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault();
+			send();
+		}
+	}
 </script>
 
-<div class="chat-container">
-  {#if hasSmilesPrediction}
-    <div class="chat-messages" bind:this={chatElement}>
-      {#each $messages as message}
-        <div class="message-bubble {message.type === 'user' ? 'user-message' : 'spectrum-message'}">
-          <div class="message-avatar">
-            <img src={message.avatar} alt={message.name} />
-          </div>
-          <div class="message-content">
-            <div class="message-header">
-              <span class="message-name">{message.name}</span>
-              <span class="message-time">{new Date(message.timestamp).toLocaleTimeString()}</span>
-            </div>
-            <div class="message-text">{message.message}</div>
-          </div>
-        </div>
-      {/each}
-    </div>
-    
-    <div class="input-area">
-      <textarea 
-        bind:value={userMessage}
-        on:keydown={handleKeyDown}
-        placeholder="Ask Spectrum a question..."
-        disabled={loading}
-        rows="2"
-      ></textarea>
-      <button 
-        class="pill-button send-button"
-        on:click={handleSend}
-        disabled={!userMessage.trim() || loading}
-      >
-        {#if loading}
-          <span class="loading-indicator"></span>
-        {:else}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
-          </svg>
-        {/if}
-      </button>
-    </div>
-  {:else}
-    <div class="placeholder">
-      <span class="placeholder-icon">💬</span>
-      <p>Chat available after SMILES processing</p>
-    </div>
-  {/if}
-</div>
+{#if hasSmilesPrediction}
+	<div class="chat-window">
+		<div class="messages" bind:this={chatEl}>
+			{#each $messages as m}
+				<div class="bubble {m.type}">
+					<img class="avatar" alt={m.name} src={m.avatar} />
+					<div class="content">
+						<div class="header">
+							<span class="name">{m.name}</span>
+							<span class="time">{new Date(m.timestamp).toLocaleTimeString()}</span>
+						</div>
+						<p class="text">{m.message}</p>
+					</div>
+				</div>
+			{/each}
+		</div>
+
+		<div class="composer">
+			<textarea
+				rows="1"
+				placeholder="Ask Spectrum…"
+				bind:value={userMessage}
+				on:keydown={handleKey}
+				disabled={loading}
+			/>
+
+			<button
+				class="send {canSend ? 'active' : ''} {loading ? 'loading' : ''}"
+				disabled={!canSend}
+				on:click={send}
+				aria-label="Send message">
+				<span class="send-icon">📤</span>
+			</button>
+		</div>
+	</div>
+{:else}
+	<div class="placeholder">
+		<span class="icon">💬</span>
+		<p>Chat activates after your first prediction</p>
+	</div>
+{/if}
 
 <style>
-  .chat-container {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-  }
-  
-  .chat-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    min-height: 200px;
-    max-height: 300px;
-  }
-  
-  .message-bubble {
-    display: flex;
-    gap: 0.75rem;
-    max-width: 80%;
-  }
-  
-  .spectrum-message {
-    align-self: flex-start;
-  }
-  
-  .user-message {
-    align-self: flex-end;
-    flex-direction: row-reverse;
-  }
-  
-  .message-avatar {
-    flex-shrink: 0;
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    overflow: hidden;
-    background: var(--accent-soft);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .message-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .message-content {
-    background: var(--glass-card-surface);
-    border-radius: var(--enforce-pill);
-    padding: 0.85rem 1.25rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    position: relative;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  
-  .user-message .message-content {
-    background: linear-gradient(135deg, var(--accent-soft) 0%, rgba(120, 121, 255, 0.1) 100%);
-    border: 1px solid rgba(120, 121, 255, 0.2);
-  }
-  
-  .message-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-  }
-  
-  .message-name {
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: var(--accent);
-  }
-  
-  .user-message .message-name {
-    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  
-  .message-time {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-  }
-  
-  .message-text {
-    font-size: 0.9rem;
-    line-height: 1.5;
-    color: var(--text-primary);
-    word-wrap: break-word;
-  }
-  
-  .input-area {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    border-top: 1px solid var(--surface-stroke);
-    padding-top: 0.75rem;
-  }
-  
-  textarea {
-    flex: 1;
-    border: 1px solid var(--surface-stroke);
-    border-radius: var(--enforce-pill);
-    padding: 0.85rem 1.25rem;
-    resize: none;
-    background: var(--glass-card-surface);
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 0.9rem;
-    line-height: 1.5;
-    transition: all 0.2s var(--transition-smooth);
-    height: auto;
-    min-height: 42px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  }
-  
-  textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 3px 12px rgba(120, 121, 255, 0.15);
-  }
-  
-  .send-button {
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
-    color: white;
-    border-radius: 50%;
-    transition: all 0.2s var(--transition-smooth);
-    border: none;
-    box-shadow: 0 4px 12px rgba(120, 121, 255, 0.3);
-  }
-  
-  .send-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(120, 121, 255, 0.4);
-  }
-  
-  .send-button:active {
-    transform: translateY(0px);
-  }
-  
-  .send-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-  
-  .loading-indicator {
-    width: 20px;
-    height: 20px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-  }
-  
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  
-  /* Placeholder styles */
-  .placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    width: 100%;
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
-    color: rgba(0, 0, 0, 0.4);
-  }
-  
-  .placeholder-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-  }
-  
-  .placeholder p {
-    font-size: 0.9rem;
-    font-weight: 500;
-  }
+	:global(.chat-window) {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+	}
+
+	.messages {
+		flex: 1;
+		overflow-y: auto;
+		padding-right: .5rem;
+		display: flex;
+		flex-direction: column;
+		gap: .75rem;
+		margin-bottom: 1rem;
+		scrollbar-width: thin;
+	}
+
+	.bubble {
+		display: flex;
+		gap: .6rem;
+		max-width: 82%;
+	}
+
+	.bubble.user   { align-self: flex-end; flex-direction: row-reverse; }
+	.bubble.assistant { align-self: flex-start; }
+
+	.avatar {
+		width: 26px; height: 26px; border-radius: 50%;
+		flex-shrink: 0; background: var(--accent-soft);
+	}
+
+	.content {
+		background: rgba(255,255,255,.75);
+		border: 1px solid rgba(0,0,0,.05);
+		border-radius: var(--enforce-pill);
+		padding: .8rem 1.15rem;
+		box-shadow: var(--shadow-sm);
+		backdrop-filter: blur(8px);
+	}
+
+	.bubble.user .content {
+		background: linear-gradient(135deg,var(--accent) 0%,var(--accent-secondary) 100%);
+		color: #fff;
+	}
+
+	.header {
+		display: flex; justify-content: space-between;
+		margin-bottom: .35rem; font-size: .76rem;
+		color: var(--text-secondary);
+	}
+
+	.bubble.user .header { color: rgba(255,255,255,.85); }
+
+	.composer {
+		display: flex; align-items: flex-end; gap: .65rem;
+		border-top: 1px solid var(--surface-stroke);
+		padding-top: .65rem;
+		position: relative;
+		z-index: 10;
+	}
+
+	textarea {
+		flex: 1; resize: none;
+		border: 1px solid var(--surface-stroke);
+		border-radius: var(--enforce-pill);
+		padding: .8rem 1rem;
+		background: var(--surface-glass);
+		font: 0.9rem/1.4 system-ui;
+		position: relative;
+		z-index: 15;
+	}
+
+	textarea:focus-visible { outline: 2px solid var(--accent); }
+
+	/* default (disabled) – soft grey pill */
+	button.send {
+		width: 46px; height: 46px;
+		border: none;
+		border-radius: 50%;
+		background: var(--accent-soft);
+		color: var(--text-tertiary);
+		cursor: not-allowed;
+		box-shadow: none;
+		transition: transform .15s ease, background .15s ease;
+		font-size: 1.25rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		position: relative;
+		z-index: 20;
+	}
+
+	/* when the user can send – bright purple gradient */
+	button.send.active {
+		cursor: pointer;
+		background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+		color: #fff;
+		box-shadow: 0 4px 12px rgba(120,121,255,.35);
+	}
+	button.send.active:hover { transform: translateY(-2px); }
+
+	/* mini-loader while waiting for Spectrum's reply */
+	button.send.loading {
+		background: var(--accent-soft);
+		cursor: progress;
+	}
+
+	.send-icon { 
+		position: relative;
+		z-index: 2;      /* sit on top of the gradient */
+		line-height: 1;   /* no extra vertical space */
+	}
 </style> 

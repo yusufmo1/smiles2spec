@@ -2,64 +2,75 @@
 Chat with Spectrum LLM integration service.
 """
 
-import os
+import json
 import requests
-from openai import OpenAI
+import re
+from dotenv import load_dotenv
 from ..utils import logger
+from .llm_config import (
+    get_model_for_task,
+    get_system_prompt,
+    get_openrouter_headers,
+    OPENROUTER_BASE_URL,
+)
 
-def generate_chat_response(messages):
+load_dotenv()  # pick up OPENROUTER_API_KEY et al.
+
+
+def _post_chat(messages, model):
+    """Low-level helper. No streaming yet."""
+    payload = {
+        "model": model,
+        "messages": messages,
+    }
+    headers = get_openrouter_headers()
+    try:
+        r = requests.post(
+            f"{OPENROUTER_BASE_URL}/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=30,
+        )
+        if r.status_code != 200:
+            raise RuntimeError(f"{r.status_code}: {r.text[:200]}")
+        data = r.json()
+        # defensive checks
+        choices = data.get("choices", [])
+        if not choices or "message" not in choices[0]:
+            raise RuntimeError("Unexpected OpenRouter reply shape")
+        return choices[0]["message"]["content"]
+    except Exception as exc:
+        logger.error(f"LLM call failed: {exc}")
+        raise
+
+
+def generate_chat_response(history):
     """
     Generates a response for the chat functionality.
     
     Args:
-        messages: List of message objects with role and content
+        history: List of message objects with role and content
         
     Returns:
         The generated message text
     """
-    try:
-        # Default system message to provide context about the application
-        system_message = {
-            "role": "system", 
-            "content": """You are Spectra, an AI assistant specialized in mass spectrometry, chemistry, 
-            and molecular structures. You can help with interpreting mass spectra, explaining SMILES 
-            notation, and providing information about chemical compounds. Be helpful, clear, and 
-            provide detailed explanations when discussing chemical compounds, SMILES notation, and 
-            mass spectrometry data. When you don't know something, admit it rather than making up
-            information."""
-        }
-        
-        # Construct the final message list with the system message first
-        final_messages = [system_message] + messages
-        
-        # Use OpenRouter integration
-        client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=os.environ.get("OPENROUTER_API_KEY")
-        )
+    system_prompt = {
+        "role": "system",
+        "content": get_system_prompt("general"),
+    }
+    messages = [system_prompt] + history
+    model = get_model_for_task("general")
 
-        completion = client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": os.environ.get("SITE_URL", "https://smiles2spec.app"),
-                "X-Title": os.environ.get("SITE_NAME", "SMILES2Spec App"),
-            },
-            model="google/gemini-2.0-flash-exp:free",
-            messages=final_messages
-        )
-        
-        message = completion.choices[0].message.content
-        
-        # If API call fails, fall back to mock response
-        if not message:
-            user_message = next((msg["content"] for msg in messages if msg["role"] == "user"), "")
-            message = generate_mock_response(user_message)
-        
-        return message
-    except Exception as e:
-        logger.error(f"Chat service error: {str(e)}")
+    try:
+        answer = _post_chat(messages, model).strip()
+        # Very light post-processing: collapse multiple newlines
+        answer = re.sub(r"\n{3,}", "\n\n", answer)
+        return answer
+    except Exception:
         # Fall back to mock response in case of error
-        user_message = next((msg["content"] for msg in messages if msg["role"] == "user"), "")
+        user_message = next((msg["content"] for msg in history if msg["role"] == "user"), "")
         return generate_mock_response(user_message)
+
 
 def generate_mock_response(message):
     """

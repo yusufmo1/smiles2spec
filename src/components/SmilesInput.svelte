@@ -449,7 +449,6 @@
   }
   
   .generate:hover { background: #7b1fa2; }
-  .generate svg { pointer-events: none; }
   
   .upload {
     background: var(--accent-secondary);
@@ -460,7 +459,6 @@
   }
   
   .upload:hover { background: var(--accent); }
-  .upload svg { pointer-events: none; }
   
   .pill-button:hover:not(:disabled) {
     background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent) 100%);
@@ -752,13 +750,6 @@
     color: var(--text-tertiary);
     cursor: not-allowed;
     box-shadow: none;
-  }
-  
-  .checkbox-container {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 1rem 0;
   }
   
   .slider-container {

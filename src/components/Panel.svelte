@@ -18,11 +18,15 @@
     // Check if the click target is a button or a child of a button
     let target = event.target;
     while (target && target !== panelEl) {
+      // Extend check to include textarea, input, and elements with contenteditable
       if (target.tagName === 'BUTTON' || 
+          target.tagName === 'TEXTAREA' || 
+          target.tagName === 'INPUT' ||
+          target.getAttribute('contenteditable') === 'true' ||
           target.getAttribute('role') === 'button' ||
           target.classList.contains('button') ||
           target.closest('button')) {
-        // If clicking on a button, do not enter carousel mode
+        // If clicking on an interactive element, do not enter carousel mode
         event.stopPropagation();
         return;
       }
@@ -41,6 +45,13 @@
   }
   
   function handleKeyDown(event) {
+    // Don't capture space or enter if the event target is a form control
+    if (event.target.tagName === 'TEXTAREA' || 
+        event.target.tagName === 'INPUT' || 
+        event.target.getAttribute('contenteditable') === 'true') {
+      return;
+    }
+    
     if (event.key === 'Enter' || event.key === ' ') {
       handleClick(event);
       event.preventDefault();

@@ -92,27 +92,6 @@ export function createLightModePlot(plotElement, data, layout) {
     plotElement.style.width = '100%';
     plotElement.style.height = '100%';
     plotElement.style.minHeight = '300px';
-    
-    // Fix for carousel mode - when in a swiper-slide, we need additional styles
-    if (plotElement.closest('.swiper-slide-content') !== null) {
-      const parentPanel = plotElement.closest('.panel-content');
-      if (parentPanel) {
-        parentPanel.style.display = 'flex';
-        parentPanel.style.flexDirection = 'column';
-        parentPanel.style.flex = '1';
-        parentPanel.style.height = '100%';
-      }
-      
-      // Ensure SVG container is properly sized
-      setTimeout(() => {
-        const svgContainer = plotElement.querySelector('.svg-container');
-        if (svgContainer) {
-          svgContainer.style.width = '100%';
-          svgContainer.style.height = '100%';
-          svgContainer.style.flex = '1';
-        }
-      }, 50);
-    }
   }
   
   // Plotly config with consistent handling
