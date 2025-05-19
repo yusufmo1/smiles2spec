@@ -2,6 +2,11 @@
 Configuration settings for the mass spectrometry prediction API.
 """
 
+import os
+
+# Get the current directory of this config file
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+
 # Feature extraction configuration
 FEATURE_CONFIG = {
     # Feature extraction settings
@@ -51,9 +56,9 @@ FEATURE_PROCESSING_CONFIG = {
 
 # API configuration
 API_CONFIG = {
-    'model_path': 'models/spectrum_predictor.pkl',
-    'preprocessor_path': 'models/feature_preprocessor.pkl',
-    'feature_mapping_path': 'models/feature_mapping.json',
+    'model_path': os.path.join(BACKEND_DIR, 'models/spectrum_predictor.pkl'),
+    'preprocessor_path': os.path.join(BACKEND_DIR, 'models/feature_preprocessor.pkl'),
+    'feature_mapping_path': os.path.join(BACKEND_DIR, 'models/feature_mapping.json'),
     'debug': True,
     'host': '0.0.0.0',
     'port': 5050

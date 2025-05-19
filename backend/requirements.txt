@@ -19,6 +19,7 @@ matplotlib==3.10.3
 matplotlib-inline==0.1.7
 nest-asyncio==1.6.0
 numpy==1.26.4
+openai==1.16.0
 packaging==25.0
 pandas==2.2.3
 parso==0.8.4
@@ -32,6 +33,7 @@ pure_eval==0.2.3
 Pygments==2.19.1
 pyparsing==3.2.3
 python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
 pytz==2025.2
 pyzmq==26.4.0
 rdkit==2025.3.2

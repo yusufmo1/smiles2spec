@@ -64,7 +64,7 @@ Backend – dev server with hot‑reload:
 ```bash
 export FLASK_APP=app.py
 export FLASK_ENV=development
-cd backend && flask run -p 5050
+cd backend && python3 -m backend.app
 ```
 
 Frontend – rollup dev server:

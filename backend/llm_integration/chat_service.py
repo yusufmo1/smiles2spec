@@ -4,6 +4,7 @@ Chat with Spectrum LLM integration service.
 
 import os
 import requests
+from openai import OpenAI
 from ..utils import logger
 
 def generate_chat_response(messages):
@@ -31,34 +32,34 @@ def generate_chat_response(messages):
         # Construct the final message list with the system message first
         final_messages = [system_message] + messages
         
-        # If you're using OpenAI or similar API directly, uncomment and use the code below
-        # response = requests.post(
-        #     "https://api.openai.com/v1/chat/completions",
-        #     headers={
-        #         "Content-Type": "application/json",
-        #         "Authorization": f"Bearer {os.environ.get('OPENAI_API_KEY')}"
-        #     },
-        #     json={
-        #         "model": "gpt-3.5-turbo",
-        #         "messages": final_messages,
-        #         "temperature": 0.7
-        #     }
-        # )
-        # 
-        # if response.status_code != 200:
-        #     return "Sorry, I encountered an error while processing your request."
-        # 
-        # result = response.json()
-        # message = result["choices"][0]["message"]["content"]
+        # Use OpenRouter integration
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.environ.get("OPENROUTER_API_KEY")
+        )
+
+        completion = client.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": os.environ.get("SITE_URL", "https://smiles2spec.app"),
+                "X-Title": os.environ.get("SITE_NAME", "SMILES2Spec App"),
+            },
+            model="google/gemini-2.0-flash-exp:free",
+            messages=final_messages
+        )
         
-        # For now, use a mock response for testing
-        user_message = next((msg["content"] for msg in messages if msg["role"] == "user"), "")
-        message = generate_mock_response(user_message)
+        message = completion.choices[0].message.content
+        
+        # If API call fails, fall back to mock response
+        if not message:
+            user_message = next((msg["content"] for msg in messages if msg["role"] == "user"), "")
+            message = generate_mock_response(user_message)
         
         return message
     except Exception as e:
         logger.error(f"Chat service error: {str(e)}")
-        return "Sorry, I encountered an error while processing your request."
+        # Fall back to mock response in case of error
+        user_message = next((msg["content"] for msg in messages if msg["role"] == "user"), "")
+        return generate_mock_response(user_message)
 
 def generate_mock_response(message):
     """

@@ -4,8 +4,9 @@ Feature preprocessing and scaling for machine learning.
 
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+import json
 from joblib import load, dump
-from utils import logger, handle_error, ensure_numpy_array
+from .utils import logger, handle_error, ensure_numpy_array
 
 class FeaturePreprocessor:
     def __init__(self, config=None):

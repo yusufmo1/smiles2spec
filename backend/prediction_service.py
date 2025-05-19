@@ -4,11 +4,11 @@ Main prediction service that integrates all components.
 
 import os
 import numpy as np
-from config import FEATURE_CONFIG, SPECTRAL_CONFIG, FEATURE_PROCESSING_CONFIG, API_CONFIG
-from molecule_featurizer import compute_molecular_features
-from spectrum_processor import SpectralProcessor
-from model_handler import ModelHandler
-from utils import logger, handle_error, convert_np_to_list, is_valid_smiles, smiles_to_png_base64, smiles_to_name
+from .config import FEATURE_CONFIG, SPECTRAL_CONFIG, FEATURE_PROCESSING_CONFIG, API_CONFIG
+from .molecule_featurizer import compute_molecular_features
+from .spectrum_processor import SpectralProcessor
+from .model_handler import ModelHandler
+from .utils import logger, handle_error, convert_np_to_list, is_valid_smiles, smiles_to_png_base64, smiles_to_name
 
 class PredictionService:
     def __init__(self):

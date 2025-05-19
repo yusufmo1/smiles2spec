@@ -4,7 +4,8 @@ Spectral data processing and binning functionality.
 
 import numpy as np
 import pandas as pd
-from utils import handle_error, logger, ensure_numpy_array
+from scipy.signal import savgol_filter
+from .utils import handle_error, logger, ensure_numpy_array
 
 class SpectralProcessor:
     def __init__(self, config):

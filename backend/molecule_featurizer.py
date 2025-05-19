@@ -9,7 +9,7 @@ from rdkit.Chem import Descriptors, rdFingerprintGenerator, rdMolDescriptors, MA
 from rdkit.ML.Descriptors import MoleculeDescriptors
 from rdkit.Avalon import pyAvalonTools
 
-from utils import handle_error, is_valid_smiles, logger
+from .utils import handle_error, is_valid_smiles, logger
 
 def extract_fingerprint(mol, fp_type, size=1024, radius=2, **kwargs):
     """Generic fingerprint extraction function."""

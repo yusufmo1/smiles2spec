@@ -7,11 +7,11 @@ from flask_cors import CORS
 import os
 import json
 import requests
-from prediction_service import PredictionService
-from config import API_CONFIG
-from utils import logger, convert_np_to_list, smiles_to_png_base64
-from llm_integration.chat_service import generate_chat_response
-from llm_integration.smiles_generator import generate_random_smiles
+from .prediction_service import PredictionService
+from .config import API_CONFIG
+from .utils import logger, convert_np_to_list, smiles_to_png_base64
+from .llm_integration.chat_service import generate_chat_response
+from .llm_integration.smiles_generator import generate_random_smiles
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -47,7 +47,7 @@ def export_msp():
     Body: { "smiles": "CCC..." }
     """
     from flask import make_response
-    from utils import peaks_to_msp
+    from .utils import peaks_to_msp
     
     data = request.json or {}
     smiles = data.get("smiles", "")
@@ -71,7 +71,7 @@ def export_msp_batch():
     Body: { "smiles_list": ["CCC...", "CCCC...", ...] }
     """
     from flask import make_response
-    from utils import peaks_to_msp
+    from .utils import peaks_to_msp
     import time
     
     data = request.json or {}

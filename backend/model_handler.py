@@ -7,7 +7,7 @@ import numpy as np
 import json
 from typing import Dict
 from joblib import load
-from utils import logger, handle_error, ensure_numpy_array, convert_np_to_list
+from .utils import logger, handle_error, ensure_numpy_array, convert_np_to_list
 
 class ModelHandler:
     def __init__(self):
@@ -32,7 +32,7 @@ class ModelHandler:
     
     def load_preprocessor(self, preprocessor_path):
         """Load a feature preprocessor from file."""
-        from feature_preprocessor import FeaturePreprocessor
+        from .feature_preprocessor import FeaturePreprocessor
         
         try:
             if os.path.exists(preprocessor_path):

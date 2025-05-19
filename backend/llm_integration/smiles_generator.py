@@ -1,84 +1,49 @@
 """
-SMILES generation service using both deterministic and LLM approaches.
+SMILES generation service using LLM approach.
 """
 
 from rdkit import Chem
-from rdkit.Chem import AllChem
-import random
 import os
+import json
 import requests
+import re
 from ..utils import logger
+from dotenv import load_dotenv
+from .llm_config import (
+    get_model_for_task,
+    get_system_prompt,
+    get_openrouter_headers,
+    OPENROUTER_BASE_URL
+)
 
-def generate_random_smiles(count=1, description=None):
+# Load environment variables from .env file
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+def generate_random_smiles(count=1, description="general organic molecule"):
     """
-    Generate random SMILES strings.
+    Generate SMILES strings using LLM.
     
     Args:
         count: Number of SMILES strings to generate (default: 1)
-        description: Text description of the desired molecule type (default: None)
+        description: Text description of the desired molecule type (default: "general organic molecule")
         
     Returns:
         List of generated SMILES strings
     """
     try:
-        # If description is provided, try to use LLM approach
-        if description and description.strip():
-            llm_smiles = generate_smiles_from_description(description, count)
-            if llm_smiles:
-                return llm_smiles
+        # Generate SMILES using the LLM
+        llm_smiles = generate_smiles_from_description(description, count)
+        if llm_smiles:
+            return llm_smiles
                 
-        # Fall back to deterministic generation
-        return generate_deterministic_smiles(count)
+        # If LLM generation fails, return a simple molecule
+        logger.warning(f"LLM SMILES generation failed for: {description}")
+        return ["C"] * count  # Methane as ultimate fallback
     except Exception as e:
         logger.error(f"SMILES generation error: {str(e)}")
         # Return a simple molecule if generation fails
         return ["C"] * count  # Methane as ultimate fallback
-
-def generate_deterministic_smiles(count=1):
-    """
-    Generate random SMILES using deterministic approach with RDKit.
-    
-    Args:
-        count: Number of SMILES strings to generate
-        
-    Returns:
-        List of generated SMILES strings
-    """
-    # Define common molecular fragments for medicinal chemistry
-    fragments = [
-        "c1ccccc1", "C1CCCCC1", "c1ccncc1", "C1CCNCC1", 
-        "CC(=O)O", "CCO", "CN", "CF", "CCl", "CBr", "NC=O", 
-        "C(=O)O", "c1cc(F)ccc1", "c1cc(Cl)ccc1", "CC#N", "C=C",
-        "CCOCC", "CN(C)C", "CSC", "CC(=O)N", "NC(=O)O", "COC",
-        "c1ccc(O)cc1", "c1ccc(N)cc1", "c1nc[nH]c1", "c1cnoc1"
-    ]
-    
-    result = []
-    for _ in range(count):
-        # Generate a random SMILES by combining fragments
-        n_fragments = random.randint(1, 3)
-        selected = random.sample(fragments, n_fragments)
-        
-        # Create molecule
-        mol = None
-        for i, frag in enumerate(selected):
-            frag_mol = Chem.MolFromSmiles(frag)
-            if i == 0:
-                mol = frag_mol
-            else:
-                # Simple merge (this is a simplified approach)
-                combo = Chem.CombineMols(mol, frag_mol)
-                mol = combo
-        
-        # If random selection failed, return a default SMILES
-        if mol is None:
-            smiles = "CCO"  # Ethanol as fallback
-        else:
-            smiles = Chem.MolToSmiles(mol)
-            
-        result.append(smiles)
-    
-    return result
 
 def generate_smiles_from_description(description, count=1):
     """
@@ -92,51 +57,91 @@ def generate_smiles_from_description(description, count=1):
         List of SMILES strings or None if generation failed
     """
     try:
-        # This is where you would integrate with an LLM API
-        # For example with OpenAI API:
+        # Check if API key is available
+        api_key = os.environ.get('OPENROUTER_API_KEY')
+        if not api_key:
+            logger.error("OpenRouter API key missing")
+            return None
         
-        # api_key = os.environ.get('OPENAI_API_KEY')
-        # if not api_key:
-        #    return None
-        #
-        # response = requests.post(
-        #     "https://api.openai.com/v1/chat/completions",
-        #     headers={
-        #         "Content-Type": "application/json",
-        #         "Authorization": f"Bearer {api_key}"
-        #     },
-        #     json={
-        #         "model": "gpt-4",
-        #         "messages": [
-        #             {"role": "system", "content": 
-        #              "You are a chemical structure generator. Generate valid SMILES strings based on descriptions. "
-        #              "Only output the SMILES strings, one per line, nothing else."},
-        #             {"role": "user", "content": 
-        #              f"Generate {count} chemically valid SMILES strings for: {description}"}
-        #         ],
-        #         "temperature": 0.7
-        #     }
-        # )
-        #
-        # if response.status_code == 200:
-        #     result = response.json()
-        #     content = result["choices"][0]["message"]["content"]
-        #     # Parse SMILES strings from the response
-        #     smiles_list = [line.strip() for line in content.split('\n') if line.strip()]
-        #     
-        #     # Validate each SMILES
-        #     valid_smiles = []
-        #     for s in smiles_list:
-        #         mol = Chem.MolFromSmiles(s)
-        #         if mol is not None:
-        #             valid_smiles.append(s)
-        #     
-        #     # Return valid SMILES up to the requested count
-        #     return valid_smiles[:count] if valid_smiles else None
+        # Get model and headers
+        model = get_model_for_task("chemistry")
+        headers = get_openrouter_headers()
+        system_prompt = get_system_prompt("smiles_generator")
         
-        # For now, return None to fall back to deterministic generation
-        return None
+        # Request data
+        data = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": f"Generate {count} chemically valid SMILES strings for: {description}"
+                }
+            ]
+        }
+        
+        # Make API request
+        logger.info(f"Requesting SMILES from LLM for: {description}")
+        response = requests.post(
+            f"{OPENROUTER_BASE_URL}/chat/completions",
+            headers=headers,
+            data=json.dumps(data)
+        )
+        
+        if response.status_code != 200:
+            logger.error(f"API request failed: {response.text}")
+            return None
+            
+        result = response.json()
+        
+        # Check for errors
+        if "error" in result:
+            logger.error(f"API returned error: {result['error'].get('message', 'Unknown error')}")
+            if "metadata" in result.get("error", {}):
+                logger.error(f"Error details: {result['error']['metadata']}")
+            return None
+            
+        # Extract content
+        if "choices" in result and len(result["choices"]) > 0:
+            content = result["choices"][0]["message"]["content"]
+            return process_smiles_response(content, count)
+        else:
+            logger.error("No choices found in API response")
+            return None
         
     except Exception as e:
         logger.error(f"LLM SMILES generation error: {str(e)}")
-        return None 
+        return None
+
+def process_smiles_response(content, count):
+    """Process LLM response and extract valid SMILES"""
+    # Parse SMILES strings from the response
+    smiles_list = [line.strip() for line in content.split('\n') if line.strip()]
+    
+    # Clean up SMILES (remove markdown code blocks, numbering, etc.)
+    cleaned_smiles = []
+    for s in smiles_list:
+        # Remove code formatting
+        s = s.replace('`', '').strip()
+        
+        # Remove numbering patterns like "1. " or "1) " at the beginning of lines
+        s = re.sub(r'^\d+[\.\)]\s*', '', s)
+        
+        if s:
+            cleaned_smiles.append(s)
+    
+    # Validate each SMILES
+    valid_smiles = []
+    for s in cleaned_smiles:
+        mol = Chem.MolFromSmiles(s)
+        if mol is not None:
+            valid_smiles.append(s)
+            logger.info(f"Valid SMILES generated: {s}")
+        else:
+            logger.warning(f"Invalid SMILES generated: {s}")
+    
+    # Return valid SMILES up to the requested count
+    return valid_smiles[:count] if valid_smiles else None 
