@@ -49,9 +49,16 @@
   
   // Keep arrow prefix in sync with textarea content
   function syncPrefix() {
-    if (prefixEl) {
-      prefixEl.textContent = ('›\n').repeat(smiles.split('\n').length);
-    }
+    if (!prefixEl) return;
+    
+    const rows = Math.max(1, smiles.split('\n').length);
+    prefixEl.textContent = Array(rows).fill('›').join('\n');
+  }
+  
+  // 🟢 make the block depend on *both* vars
+  $: {               // runs whenever either changes
+    smiles;          // <-- touch `smiles` so Svelte tracks it
+    if (prefixEl) syncPrefix();
   }
   
   export function setLoading(loading) {
