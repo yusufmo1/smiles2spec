@@ -5,7 +5,8 @@
   const dispatch = createEventDispatcher();
   let smiles = '';
   let isLoading = false;
-  let inputElement;
+  let textareaElement;
+  let prefixEl;
   let isFocused = false;
   let fileChooser;
   let showUploadModal = false;
@@ -15,15 +16,41 @@
   let smilesCount = 1;
   let smilesDescription = '';
   
+  // Calculate line count for textarea sizing
+  $: lineCount = smiles.split('\n').length;
+  
   function handleSubmit() {
     if (!smiles.trim() || isLoading) return;
     isLoading = true;
-    dispatch('predict', { smiles });
+    
+    // Get all non-empty lines
+    const lines = getSmilesList();
+    
+    // If there's only one line, treat as a single SMILES
+    if (lines.length === 1) {
+      dispatch('predict', { smiles: lines[0] });
+    } else if (lines.length > 1) {
+      // If there are multiple lines, send as bulk
+      dispatch('bulk', { list: lines });
+    }
+  }
+  
+  function getSmilesList() {
+    return smiles.split(/\s*\n\s*/).filter(Boolean);
   }
   
   function handleKeydown(e) {
-    if (e.key === 'Enter' && smiles.trim() && !isLoading) {
+    // Only submit on Ctrl+Enter or Cmd+Enter
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
       handleSubmit();
+    }
+  }
+  
+  // Keep arrow prefix in sync with textarea content
+  function syncPrefix() {
+    if (prefixEl) {
+      prefixEl.textContent = ('›\n').repeat(smiles.split('\n').length);
     }
   }
   
@@ -112,26 +139,14 @@
         description: smilesDescription 
       });
       
-      // For multiple SMILES, either use the first one or join with dots
+      // For multiple SMILES, join with newlines
       if (result.smiles.length > 0) {
-        if (smilesCount === 1 || document.getElementById('auto-analyze-checkbox').checked) {
-          // Use the first SMILES if auto-analyzing
-          smiles = result.smiles[0];
-        } else {
-          // Join multiple SMILES with dots for bulk processing
-          smiles = result.smiles.join('.');
-        }
+        smiles = result.smiles.join('\n');
       }
       
       closeGenerateModal();
       
-      // Auto-submit if user wants and only generating a single SMILES
-      if (document.getElementById('auto-analyze-checkbox').checked && smilesCount === 1) {
-        handleSubmit();
-      } else if (document.getElementById('auto-analyze-checkbox').checked && smilesCount > 1) {
-        // For multiple SMILES with auto-analyze, dispatch as bulk
-        dispatch('bulk', { list: result.smiles });
-      }
+      // No auto-submission - user must manually click Analyze
     } catch (err) {
       alert(err.message);
     } finally {
@@ -140,24 +155,27 @@
   }
   
   onMount(() => {
-    if (inputElement) inputElement.focus();
+    if (textareaElement) textareaElement.focus();
+    // Initialize the arrow prefix
+    syncPrefix();
   });
 </script>
 
 <div class="input-container glass-card" class:focused={isFocused}>
-  <div class="input-field">
-    <span class="prompt-sign">›</span>
-    <input 
-      type="text" 
+  <div class="multi-input-wrapper">
+    <pre class="line-prefix" bind:this={prefixEl}>›</pre>
+    <textarea 
       bind:value={smiles}
-      bind:this={inputElement}
+      bind:this={textareaElement}
       placeholder="Enter SMILES notation"
       disabled={isLoading}
+      rows={Math.min(8, lineCount)}
+      on:input={syncPrefix}
       on:keydown={handleKeydown}
       on:focus={() => isFocused = true}
       on:blur={() => isFocused = false}
       aria-label="SMILES notation input"
-    />
+    ></textarea>
   </div>
   
   <!-- Magic Wand button -->
@@ -290,11 +308,6 @@
             <p class="description-help">Adding a description may use AI to generate more relevant structures</p>
           </div>
           
-          <div class="checkbox-container">
-            <input type="checkbox" id="auto-analyze-checkbox" checked>
-            <label for="auto-analyze-checkbox">Analyze immediately after generation</label>
-          </div>
-          
           <button class="generate-button" on:click={generateRandomSmiles} disabled={isGenerating}>
             {#if isGenerating}
               <span class="loading-indicator"></span>
@@ -307,7 +320,7 @@
           <p class="help-text">
             This will create {smilesCount > 1 ? `${smilesCount} random` : 'a random'}, chemically valid molecular structure{smilesCount > 1 ? 's' : ''}.
             {#if smilesCount > 1}
-              <br>Multiple structures will be treated as a batch.
+              <br>Multiple structures will be added to the input field as separate lines.
             {/if}
           </p>
         </div>
@@ -352,38 +365,47 @@
     z-index: -1;
   }
   
-  .input-field {
-    display: flex;
-    align-items: center;
+  /* Multi-line input wrapper */
+  .multi-input-wrapper {
+    position: relative;
     flex: 1;
-    padding-left: 1.25rem;
   }
   
-  .prompt-sign {
+  /* Arrow prefix styling */
+  .line-prefix {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 0.85rem 0 0 1.25rem;
+    white-space: pre;
+    font-family: 'Prosto One', sans-serif;
+    font-size: 1rem;
+    line-height: 1.55;
     color: var(--accent);
-    margin-right: 0.75rem;
-    font-weight: 500;
-    font-size: 1.25rem;
-    opacity: 0.85;
-    text-shadow: 0 0 8px rgba(120, 121, 255, 0.3);
+    pointer-events: none;
+    margin: 0;
   }
   
-  input {
-    flex: 1;
+  /* Textarea styling */
+  textarea {
+    width: 100%;
     background: transparent;
     border: none;
     color: var(--text-primary);
-    font-family: inherit;
+    font-family: 'Prosto One', sans-serif;
     font-size: 1rem;
-    padding: 0.85rem 0;
+    line-height: 1.55;
+    padding: 0.85rem 0.85rem 0.85rem 2.25rem;
     outline: none;
+    resize: vertical;
+    overflow: hidden;
   }
   
-  input::placeholder {
+  textarea::placeholder {
     color: var(--text-tertiary);
   }
   
-  input:disabled {
+  textarea:disabled {
     opacity: 0.7;
     cursor: not-allowed;
   }
@@ -623,10 +645,9 @@
       padding: 1.25rem;
     }
     
-    .input-field {
+    .multi-input-wrapper {
       width: 100%;
       margin-bottom: 1.25rem;
-      padding-left: 0;
     }
     
     .pill-button {

@@ -119,7 +119,7 @@
 		bulkList = event.detail.list;
 		idx = 0;
 		smilesInputComponent.setLoading(true);
-		smilesInputComponent.$set({ smiles: bulkList[0] });
+		currentSmiles = bulkList[0];  // Set the current SMILES for display
 		handlePredict({ detail: { smiles: bulkList[0] } });
 	}
 	
@@ -128,7 +128,7 @@
 		if (!bulkList.length) return;
 		idx = (idx + offset + bulkList.length) % bulkList.length;
 		const s = bulkList[idx];
-		smilesInputComponent.$set({ smiles: s });
+		currentSmiles = s;  // Update the current SMILES
 		handlePredict({ detail: { smiles: s } });
 	}
 	

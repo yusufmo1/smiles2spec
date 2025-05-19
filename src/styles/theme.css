@@ -20,6 +20,11 @@ body {
   padding: 0;
 }
 
+/* Prosto One font class */
+.prosto-one-regular {
+  font-family: 'Prosto One', sans-serif;
+}
+
 /* Glass card component */
 .glass-card {
   background: var(--surface-glass);
