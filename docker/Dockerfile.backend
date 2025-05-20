@@ -22,9 +22,6 @@ RUN pip install --no-cache-dir gunicorn flask-cors
 WORKDIR /app
 COPY backend /app/backend
 
-# Create models directory with proper permissions
-RUN mkdir -p /app/backend/models && chmod 777 /app/backend/models
-
 # Expose port
 EXPOSE 5000
 

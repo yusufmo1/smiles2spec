@@ -8,3 +8,5 @@ spectrum_predictor.pkl
 .cursorignore
 .env
 .gitignore
+.pycache
+.pyc
