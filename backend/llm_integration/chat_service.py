@@ -14,7 +14,7 @@ from .llm_config import (
     OPENROUTER_BASE_URL,
 )
 
-load_dotenv()  # pick up OPENROUTER_API_KEY et al.
+load_dotenv()  
 
 
 def _post_chat(messages, model):

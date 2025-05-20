@@ -10,6 +10,7 @@ RUN npm run build      # produces static files in /src/public
 FROM nginx:1.25-alpine
 # Replace default Nginx site with our app
 COPY --from=build /src/public /usr/share/nginx/html
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 # Optional: tailor cache rules / gzip, etc.
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"] 
