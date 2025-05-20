@@ -18,7 +18,7 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     volumes:
-      - ./backend/models:/app/models
+      - ./backend/models:/app/backend/models
     ports:
       - "5050:5000"
     networks:
