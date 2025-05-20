@@ -28,9 +28,9 @@ EXPOSE 5000
 # Create startup script
 COPY <<EOF /app/start.sh
 #!/bin/sh
-cd /app/backend
-python -c "from llm_integration.model_downloader import initialize_models; initialize_models()"
-exec gunicorn --bind 0.0.0.0:5000 backend.app:app
+cd /app
+python -c "from backend.llm_integration.model_downloader import initialize_models; initialize_models()"
+exec gunicorn --bind 0.0.0.0:5000 "backend.app:app"
 EOF
 
 RUN chmod +x /app/start.sh
