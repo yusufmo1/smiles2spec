@@ -1,0 +1,36 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: ms-backend
+    environment:
+      # Surface **only** what's needed at runtime
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
+      - FLASK_ENV=production
+    volumes:
+      # model files can be cached outside the container
+      - ./backend/models:/app/backend/models
+    ports:
+      - "5050:5050"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: ms-frontend
+    depends_on:
+      - backend
+    environment:
+      - NGINX_PORT=80
+    ports:
+      - "3000:80"      # http://localhost:3000
+    restart: unless-stopped
+
+networks:
+  default:
+    name: ms-net 
