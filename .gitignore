@@ -1,8 +1,7 @@
 /node_modules/
 /public/build/
 .DS_Store
-/backend/llm_integration/backend/models/spectrum_predictor.pkl
-spectrum_predictor.pkl
+backend/models/spectrum_predictor.pkl
 .venv
 .vscode
 .cursorignore
