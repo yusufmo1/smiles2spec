@@ -10,6 +10,9 @@ services:
       # Surface **only** what's needed at runtime
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
+      - AZURE_STORAGE_CONTAINER=${AZURE_STORAGE_CONTAINER}
+      - AZURE_STORAGE_BLOB=${AZURE_STORAGE_BLOB}
+      - LOCAL_MODEL_PATH=/app/backend/models/spectrum_predictor.pkl
       - FLASK_ENV=production
     volumes:
       # model files can be cached outside the container

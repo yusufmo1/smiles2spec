@@ -12,6 +12,14 @@ from .config import API_CONFIG
 from .utils import logger, convert_np_to_list, smiles_to_png_base64
 from .llm_integration.chat_service import generate_chat_response
 from .llm_integration.smiles_generator import generate_random_smiles
+from .llm_integration.model_downloader import initialize_models
+
+# Try to download models if they don't exist
+try:
+    initialize_models()
+except Exception as e:
+    logger.error(f"Failed to download models: {str(e)}")
+    logger.warning("Continuing without model download. Some features may not work correctly.")
 
 # Initialize Flask app
 app = Flask(__name__)
