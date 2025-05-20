@@ -5,7 +5,7 @@ Module for downloading ML models from Azure Blob Storage.
 import os
 from pathlib import Path
 from azure.storage.blob import BlobServiceClient
-from azure.core.exceptions import ResourceNotFound
+from azure.core.exceptions import ResourceNotFoundError
 
 def ensure_model_directory(model_path: str) -> None:
     """Ensure the model directory exists."""
@@ -51,7 +51,7 @@ def download_spectrum_predictor() -> None:
 
         print(f"Successfully downloaded model to {local_path}")
 
-    except ResourceNotFound:
+    except ResourceNotFoundError:
         raise Exception(f"Model file {blob_name} not found in Azure Storage container {container_name}")
     except Exception as e:
         raise Exception(f"Failed to download model: {str(e)}")
