@@ -2,7 +2,11 @@
 /public/build/
 *.pkl
 .DS_Store
+backend/models/spectrum_predictor.pkl
 /backend/models/spectrum_predictor.pkl
+/backend/models/spectrum_predictor.pkl
+/backend/models/spectrum_predictor.pkl.part
+/backend/models/spectrum_predictor.pkl.part.1
 .venv
 .vscode
 .cursorignore
