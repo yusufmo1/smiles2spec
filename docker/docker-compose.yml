@@ -18,13 +18,22 @@ services:
       context: .
       dockerfile: Dockerfile.backend
     volumes:
-      - ./backend/models:/app/backend/models
+      - model-data:/app/backend/models
     ports:
       - "5050:5000"
+    environment:
+      - AZURE_STORAGE_CONNECTION_STRING
+      - AZURE_STORAGE_CONTAINER
+      - AZURE_STORAGE_BLOB
+      - LOCAL_MODEL_PATH
     networks:
       - app-network
     restart: unless-stopped
 
 networks:
   app-network:
-    driver: bridge 
+    driver: bridge
+
+volumes:
+  model-data:
+    driver: local 
