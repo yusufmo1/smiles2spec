@@ -10,13 +10,21 @@
 	marked.setOptions({
 		gfm: true,
 		breaks: true,
-		sanitize: false // Note: sanitize is deprecated, we'll handle this differently
+		sanitize: false, // Note: sanitize is deprecated, we'll handle this differently
+		mangle: false,
+		headerIds: false
 	});
 
 	// Function to render markdown safely
 	function renderMarkdown(text) {
 		if (!text) return '';
-		return marked(text);
+		try {
+			// Use marked to convert markdown to HTML
+			return marked(text);
+		} catch (e) {
+			console.error('Error rendering markdown:', e);
+			return text; // Fallback to plain text if rendering fails
+		}
 	}
 
 	/**
@@ -74,14 +82,31 @@
 			const msgIndex = updatedMessages.findIndex(msg => msg.id === streamingMessageId);
 			
 			if (msgIndex !== -1) {
+				// Create a NEW object to ensure reactivity
 				updatedMessages[msgIndex] = {
 					...updatedMessages[msgIndex],
-					message: updatedMessages[msgIndex].message + chunk
+					message: updatedMessages[msgIndex].message + chunk,
+					// Add a timestamp to force update
+					_lastUpdate: Date.now()
 				};
 			}
 			
 			return updatedMessages;
 		});
+		
+		// Force a re-render by scheduling a microtask
+		setTimeout(() => {
+			const messageElement = document.getElementById(`message-${streamingMessageId}`);
+			if (messageElement) {
+				// Update the content directly to ensure it renders
+				messageElement.innerHTML = renderMarkdown(
+					$messages.find(msg => msg.id === streamingMessageId)?.message || ''
+				);
+				
+				// Update the scrolling to keep the latest content visible
+				chatEl?.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' });
+			}
+		}, 0);
 	}
 
 	async function send() {
@@ -175,7 +200,7 @@
 							<span class="name">{m.name}</span>
 							<span class="time">{new Date(m.timestamp).toLocaleTimeString()}</span>
 						</div>
-						<div class="text markdown-content" innerHTML={renderMarkdown(m.message)}></div>
+						<div class="text markdown-content" id="message-{m.id}" innerHTML={renderMarkdown(m.message)}></div>
 					</div>
 				</div>
 			{/each}

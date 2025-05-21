@@ -15,7 +15,7 @@ SITE_NAME = os.environ.get("SITE_NAME", "SMILES2Spec App")
 
 # Model configurations - using free tier models available on OpenRouter
 MODELS = {
-    "chat": "mistralai/mistral-7b-instruct:free",    # General chat, free tier
+    "chat": "deepseek/deepseek-chat-v3-0324:free",    # General chat, free tier
     "chemistry": "deepseek/deepseek-chat-v3-0324:free",  # For chemistry tasks
 }
 
