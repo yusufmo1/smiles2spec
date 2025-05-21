@@ -20,4 +20,8 @@ __pycache__/
 *.pyc
 package-lock.json
 backend/models/feature_preprocessor.pkl
+backend/models/feature_mapping.
+__pycache__/
+*.py[cod]
+*$py.class
 backend/models/feature_mapping.json
