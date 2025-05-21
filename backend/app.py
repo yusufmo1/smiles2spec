@@ -2,16 +2,14 @@
 Flask API for mass spectrometry prediction service.
 """
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
 import os
 import json
-import requests
 from .prediction_service import PredictionService
 from .config import API_CONFIG
 from .utils import logger, convert_np_to_list, smiles_to_png_base64
-from .llm_integration.chat_service import generate_chat_response
-from .llm_integration.smiles_generator import generate_random_smiles
+from .llm_integration import generate_chat_response, generate_smiles
 from .model_downloader import initialize_models
 
 # Try to download models if they don't exist
@@ -193,35 +191,46 @@ def smiles_bulk():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    """
-    API endpoint for chat functionality.
-    Accepts messages in the format: 
-    { "messages": [{"role": "user"|"assistant", "content": "message"}] }
-    """
+    """API endpoint for chat functionality."""
     try:
         data = request.json
         messages = data.get('messages', [])
-        
+        stream = data.get('stream', False)
+        smiles = data.get('smiles')
+
         if not messages:
             return jsonify({"error": "No messages provided"}), 400
-        
-        message = generate_chat_response(messages)
-        
-        return jsonify({"message": message})
+
+        # Get spectrum data if SMILES provided
+        spectrum_data = None
+        if smiles:
+            spectrum_data = prediction_service.predict_spectrum_from_smiles(smiles)
+
+        if stream:
+            def generate():
+                for chunk in generate_chat_response(messages, spectrum_data, stream=True):
+                    yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+                yield "data: [DONE]\n\n"
+
+            return Response(generate(), mimetype='text/event-stream')
+        else:
+            message = generate_chat_response(messages, spectrum_data)
+            return jsonify({"message": message})
+
     except Exception as e:
         logger.error(f"Chat API error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/generate_smiles', methods=['POST'])
-def generate_smiles():
+def generate_smiles_endpoint():
     """API endpoint for generating SMILES strings."""
     try:
         data = request.json or {}
         count = max(1, min(10, data.get('count', 1)))  # Limit between 1-10
-        description = data.get('description', '')
-        
-        smiles_list = generate_random_smiles(count=count, description=description)
-        
+        description = data.get('description', 'organic molecule')
+
+        smiles_list = generate_smiles(description, count)
+
         return jsonify({"smiles": smiles_list})
     except Exception as e:
         logger.error(f"SMILES generation error: {str(e)}")
