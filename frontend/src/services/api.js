@@ -105,6 +105,8 @@ export async function uploadSmilesFile(file) {
 export async function chatWithSpectrum(messages, options = {}) {
   const { smiles, onChunk } = options;
   
+  console.log("Sending chat messages:", messages);
+  
   const payload = { 
     messages,
     stream: true
@@ -113,6 +115,7 @@ export async function chatWithSpectrum(messages, options = {}) {
   // Include SMILES if provided for spectrum visualization
   if (smiles) {
     payload.smiles = smiles;
+    console.log("Including SMILES in chat request:", smiles);
   }
   
   try {
@@ -143,11 +146,16 @@ export async function chatWithSpectrum(messages, options = {}) {
               if (buffer.trim() && typeof onChunk === 'function') {
                 try {
                   const parsed = JSON.parse(buffer.trim());
-                  if (parsed.chunk) onChunk(parsed.chunk);
+                  if (parsed.chunk) {
+                    console.log("Final chunk:", parsed.chunk.substring(0, 20) + "...");
+                    onChunk(parsed.chunk);
+                  }
                 } catch (e) {
                   // Skip invalid JSON
+                  console.warn("Error parsing final buffer:", e);
                 }
               }
+              console.log("Stream complete");
               resolve();
               break;
             }
@@ -165,6 +173,7 @@ export async function chatWithSpectrum(messages, options = {}) {
                 const data = line.slice(6);
                 
                 if (data === '[DONE]') {
+                  console.log("Received [DONE] signal");
                   resolve();
                   break;
                 }
@@ -172,15 +181,18 @@ export async function chatWithSpectrum(messages, options = {}) {
                 try {
                   const parsed = JSON.parse(data);
                   if (parsed.chunk && typeof onChunk === 'function') {
+                    console.log("Chunk received:", parsed.chunk.substring(0, 20) + "...");
                     onChunk(parsed.chunk);
                   }
                 } catch (e) {
                   // Skip invalid JSON
+                  console.warn("Error parsing chunk:", e, "Raw data:", data);
                 }
               }
             }
           }
         } catch (error) {
+          console.error("Stream processing error:", error);
           reject(error);
         }
       }

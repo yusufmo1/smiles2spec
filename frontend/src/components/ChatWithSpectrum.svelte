@@ -57,6 +57,21 @@
 		}
 	]);
 
+	// Update initial message when SMILES changes
+	$: if (currentSmiles && hasSmilesPrediction && $messages.length > 0) {
+		// Update initial message when SMILES prediction is ready
+		messages.update(m => {
+			const firstMessage = m[0];
+			return [
+				{
+					...firstMessage,
+					message: `Hello! I'm Spectrum, your spectral-analysis assistant. Ask me anything about the current molecule (${currentSmiles}) or its mass spectrum!`
+				},
+				...m.slice(1) // Keep any other messages
+			];
+		});
+	}
+
 	/* local state --------------------------------------------------------- */
 	let userMessage = '';
 	/** @type {HTMLDivElement} */
@@ -73,58 +88,64 @@
 
 	$: scrollToBottom();               // whenever $messages changes
 	
+	// Debug output to verify message store content
+	$: console.log("Current messages:", $messages);
+	
 	// Handler for streaming message chunks
 	function handleStreamChunk(chunk) {
 		if (!streamingMessageId) return;
+		
+		console.log("Received chunk:", chunk);
 		
 		messages.update(m => {
 			const updatedMessages = [...m];
 			const msgIndex = updatedMessages.findIndex(msg => msg.id === streamingMessageId);
 			
 			if (msgIndex !== -1) {
+				console.log("Updating message with chunk, current content:", 
+					updatedMessages[msgIndex].message.length, "bytes");
+				
 				// Create a NEW object to ensure reactivity
 				updatedMessages[msgIndex] = {
 					...updatedMessages[msgIndex],
-					message: updatedMessages[msgIndex].message + chunk,
-					// Add a timestamp to force update
-					_lastUpdate: Date.now()
+					message: updatedMessages[msgIndex].message + chunk
 				};
+			} else {
+				console.warn("Message not found:", streamingMessageId);
 			}
 			
 			return updatedMessages;
 		});
 		
-		// Force a re-render by scheduling a microtask
+		// Let Svelte handle the rendering through reactivity
 		setTimeout(() => {
-			const messageElement = document.getElementById(`message-${streamingMessageId}`);
-			if (messageElement) {
-				// Update the content directly to ensure it renders
-				messageElement.innerHTML = renderMarkdown(
-					$messages.find(msg => msg.id === streamingMessageId)?.message || ''
-				);
-				
-				// Update the scrolling to keep the latest content visible
-				chatEl?.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' });
-			}
+			// Just scroll to keep the latest content visible
+			chatEl?.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' });
 		}, 0);
 	}
 
 	async function send() {
 		if (!userMessage.trim() || loading) return;
 
+		const userContent = userMessage.trim();
+		console.log("Sending user message:", userContent);
+		
 		/* push user bubble */
 		const userId = Date.now();
-		messages.update((m) => [
-			...m,
-			{
-				id: userId,
-				avatar: '/assets/images/user-avatar.png',
-				name: 'You',
-				message: userMessage,
-				timestamp: new Date().toISOString(),
-				type: 'user'
-			}
-		]);
+		messages.update((m) => {
+			console.log("Adding user message to store:", userContent);
+			return [
+				...m,
+				{
+					id: userId,
+					avatar: '/assets/images/user-avatar.png',
+					name: 'You',
+					message: userContent,
+					timestamp: new Date().toISOString(),
+					type: 'user'
+				}
+			];
+		});
 
 		/** @type {ApiMessage[]} */
 		const history = $messages.map(({ type, message }) => ({ role: type, content: message }));
@@ -188,7 +209,6 @@
 		}
 	}
 </script>
-
 {#if hasSmilesPrediction}
 	<div class="chat-window">
 		<div class="messages" bind:this={chatEl}>
@@ -200,7 +220,9 @@
 							<span class="name">{m.name}</span>
 							<span class="time">{new Date(m.timestamp).toLocaleTimeString()}</span>
 						</div>
-						<div class="text markdown-content" id="message-{m.id}" innerHTML={renderMarkdown(m.message)}></div>
+						<div class="text markdown-content" id="message-{m.id}">
+							{@html renderMarkdown(m.message)}
+						</div>
 					</div>
 				</div>
 			{/each}
@@ -253,10 +275,18 @@
 		display: flex;
 		gap: .6rem;
 		max-width: 82%;
+		margin-bottom: 0.75rem; /* Ensure spacing between messages */
 	}
 
-	.bubble.user   { align-self: flex-end; flex-direction: row-reverse; }
-	.bubble.assistant { align-self: flex-start; }
+	.bubble.user { 
+		align-self: flex-end; 
+		flex-direction: row-reverse;
+		background: transparent; /* Make sure no background is hiding content */
+	}
+	.bubble.assistant { 
+		align-self: flex-start; 
+		background: transparent; 
+	}
 
 	.avatar {
 		width: 26px; height: 26px; border-radius: 50%;

@@ -15,8 +15,8 @@ SITE_NAME = os.environ.get("SITE_NAME", "SMILES2Spec App")
 
 # Model configurations - using free tier models available on OpenRouter
 MODELS = {
-    "chat": "deepseek/deepseek-chat-v3-0324:free",    # General chat, free tier
-    "chemistry": "deepseek/deepseek-chat-v3-0324:free",  # For chemistry tasks
+    "chat": "google/gemma-3-27b-it:free",    # General chat, free tier
+    "chemistry": "google/gemma-3-27b-it:free",  # For chemistry tasks
 }
 
 def get_headers():
