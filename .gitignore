@@ -19,3 +19,5 @@ backend/models/spectrum_predictor.pkl
 __pycache__/
 *.pyc
 package-lock.json
+backend/models/feature_preprocessor.pkl
+backend/models/feature_mapping.json
