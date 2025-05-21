@@ -27,4 +27,5 @@ __pycache__/
 backend/models/feature_mapping.json
 backend/models/spectrum_predictor.pkl
 backend/models/feature_mapping.json
-backend/models/*
+backend/models/*backend/backend/models/spectrum_predictor.pkl
+backend/models/spectrum_predictor.pkl
