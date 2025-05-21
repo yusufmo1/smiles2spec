@@ -1,47 +1,74 @@
 # SMILES2SPEC
 
-**Predict high‑resolution EI mass spectra directly from SMILES** – a full‑stack application that couples a trained machine‑learning model (scikit‑learn + RDKit) to a lightweight Flask API and a Svelte single‑page UI.
+SMILES2SPEC is a full-stack application that predicts high-resolution electron ionization (EI) mass spectra directly from SMILES strings. It combines a trained machine-learning model (scikit-learn and RDKit) with a lightweight Flask backend and an interactive Svelte frontend.
 
----
+## ✨ Features
 
-## ✨  Features
+### Backend
 
-| Layer                       | Highlights                                                                                                                                                                                           |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Backend**                 | Flask 2.x REST API & Gunicorn server, on‑the‑fly RDKit featurisation, pretrained scikit‑learn regressor, JSON output with spectrum, peak list, molecular structure SVG and MSP export.               |
-| **Pre‑processing pipeline** | Parallelised (joblib) spectrum featuriser, automatic feature schema builder, variance / NaN filtering, StandardScaler wrapper, artefact writer (`feature_preprocessor.pkl`, `feature_mapping.json`). |
-| **Model**                   | Ready‑to‑use RandomForest intensity regressor (`spectrum_predictor.pkl`).                                                                                                                            |
-| **Frontend**                | Svelte + Plotly.js for interactive spectrum plots, chemical‑structure panel rendered from SVG, bulk SMILES upload (TXT), arrow navigator, MSP download, fully static bundle served by Nginx.         |
+* **Flask 2.x REST API** with Gunicorn server
+* Real-time molecule featurization using **RDKit**
+* Pre-trained scikit-learn regression model
+* Outputs JSON-formatted spectra, peak lists, molecular structures (SVG/PNG), and MSP file exports
 
----
+### Pre-processing Pipeline
 
-## 📁  Repository layout
+* Parallelized feature extraction (joblib)
+* Automatic feature schema generation
+* Variance and NaN filtering
+* Log-scaling and standardization (StandardScaler)
+* Preprocessing artifacts saved for consistent deployment
+
+### Model
+
+* Ready-to-use **RandomForest** regressor for spectrum intensity prediction
+
+### Frontend
+
+* Interactive spectrum visualization with **Plotly.js**
+* Chemical structures rendered directly from SVG/PNG
+* Supports bulk upload of SMILES strings (TXT/CSV)
+* Easy navigation between molecules
+* Direct MSP file downloads
+* Fully static frontend deployment via Nginx
+
+### AI Integration
+
+* **Chat interface** powered by a specialized language model for spectral analysis and chemical explanations
+* AI-assisted generation of chemically valid SMILES strings from natural language descriptions
+
+## 📁 Repository Layout
 
 ```
 .
-├── backend/               # Flask API + ML artefacts
-│   ├── app.py             # Entry‑point (creates Flask app)
-│   ├── models/            # spectrum_predictor.pkl, feature_preprocessor.pkl, feature_mapping.json
-│   ├── templates/         # Jinja templates (fallback HTML test page)
-│   └── ...                # src modules (feature_preprocessor.py, model_handler.py, ...)
-├── src/                   # Svelte source
-│   └── components/        # UI components
-├── public/                # Compiled SPA is copied here (public/build)
+├── backend/                  # Flask API + ML artifacts
+│   ├── app.py                # Entry‑point for the Flask application
+│   ├── models/               # Pretrained models and preprocessing artifacts
+│   ├── llm_integration/      # AI modules for chat and SMILES generation
+│   ├── templates/            # Jinja templates for fallback pages
+│   └── ...                   # Additional source modules
+├── frontend/                 # Svelte application
+│   ├── src/                  # Svelte source code
+│   │   ├── components/       # UI components
+│   │   └── services/         # API interactions and utilities
+│   ├── public/               # Static assets
+│   └── ...                   # Configuration files
+├── Dockerfiles               # Docker deployment configurations
 └── README.md
 ```
 
----
-
-## ⚙️  Requirements
+## ⚙️ Requirements
 
 | Tool   | Tested version |
 | ------ | -------------- |
 | Python | 3.10           |
 | Node   | 20.x LTS       |
-| RDKit  | 2023.09        |
+| RDKit  | 2023.09+       |
 | npm    | 10.x           |
 
-Install Python deps (backend):
+### Installation
+
+**Backend:**
 
 ```bash
 cd backend
@@ -49,17 +76,15 @@ python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Install Node deps (frontend):
+**Frontend:**
 
 ```bash
-npm ci    # installs exact lockfile versions
+npm ci  # Installs exact lockfile versions
 ```
 
----
+## 🏃‍♂️ Running Locally
 
-## 🏃‍♂️  Running locally
-
-Backend – dev server with hot‑reload:
+**Backend (with hot-reload):**
 
 ```bash
 export FLASK_APP=app.py
@@ -67,123 +92,78 @@ export FLASK_ENV=development
 cd backend && python3 -m backend.app
 ```
 
-Frontend – rollup dev server:
+**Frontend:**
 
 ```bash
-npm run dev   # default on http://localhost:5000
+npm run dev  # Available at http://localhost:5000
 ```
 
-Edit `src/services/api.js` if you want to hit a remote backend during dev.
+For remote backend during development, adjust `src/services/api.js`.
 
----
+## 🐳 Docker Deployment
 
-## 🔬  Model provenance & feature pipeline
+Dockerfiles are provided for easy deployment:
 
-SMILES in → **RDKit featurisation** (physicochemical descriptors ≈ 8,000 raw features) → variance / NaN filtering → log‑scaling & `StandardScaler` → **RandomForest intensity regressor**.
+```bash
+# Build
+ docker build -f backend/Dockerfile -t smiles2spec-backend .
+ docker build -f frontend/Dockerfile -t smiles2spec-frontend .
 
-The resulting artefacts (`feature_preprocessor.pkl`, `feature_mapping.json`, `spectrum_predictor.pkl`) live in `backend/models/` – you **don't need to retrain**.
-
----
-
-## 🔑  REST API
-
-All endpoints accept / return **JSON**.
-
-### `POST /api/predict`
-
-Request
-
-```jsonc
-{
-  "smiles": "CC(=O)OC1=CC=CC=C1C(=O)O"
-}
+# Run
+ docker run -p 5050:5050 smiles2spec-backend
+ docker run -p 80:80 smiles2spec-frontend
 ```
 
-Response
+## 🔬 Model and Feature Pipeline
 
-```jsonc
-{
-  "smiles": "…",
-  "chemical_name": "acetylsalicylic acid",
-  "molecular_weight": 180.157,
-  "exact_mass": 180.0423,
-  "spectrum": {
-    "x": [0, 1, 2, …],
-    "y": [0.0, 0.0, 0.03, …]
-  },
-  "peaks": [
-    {"mz": 43.0, "intensity": 0.91},
-    {"mz": 77.0, "intensity": 0.72}
-  ],
-  "structure_svg": "<svg…/svg>"
-}
-```
+* Input SMILES → RDKit featurization (approx. 8,000 features) → variance/NaN filtering → scaling and standardization → RandomForest regression model
+* Model and preprocessing artifacts are stored in `backend/models/`.
+* Production deployment supports downloading models from Azure Blob Storage.
 
-### `POST /api/export_msp`
+## 🔑 REST API Endpoints
 
-```jsonc
-{
-  "smiles": "CCO"
-}
-```
+* **`POST /api/predict`**: Predict spectra from SMILES strings
+* **`POST /api/export_msp`**: Generate downloadable MSP file
+* **`POST /api/export_msp_batch`**: Batch MSP file export
+* **`POST /api/smiles_bulk`**: Bulk SMILES upload via TXT or CSV
+* **`POST /api/chat`**: AI-powered chat interactions
+* **`POST /api/generate_smiles`**: Generate SMILES from descriptions
+* **`GET /api/structure` and `GET /api/structure/png`**: Retrieve molecular structures
+* **`GET /api/health`**: Check API health status
 
-Returns a downloadable `.msp` file (intensities scaled to 1000).
+## 🧠 Chat with Spectrum
 
-### `POST /api/smiles_bulk`
+An integrated chat assistant to support chemical analyses:
 
-Multipart upload of a `.txt` file (one SMILES per line) → returns JSON list for the front‑end navigator.
+* Detailed explanations of SMILES notation and mass spectrometry
+* Spectrum interpretation and compound analysis
+* Fully integrated within the main user interface
+* Context-aware chemical insights
 
-### `GET /api/health`
+## 🪄 AI SMILES Generation
 
-```json
-{"status":"healthy","model_loaded":true}
-```
+Generate chemically valid SMILES using AI:
 
----
+* Quickly produce multiple drug-like molecules
+* Guide molecule generation with specific descriptions
+* Ideal for batch analysis and predictive workflows
 
-## 📜  License
+## 🖼️ User Interface
 
-MIT – see `LICENSE` file.
+Modern and intuitive UI designed for chemical analysis:
 
-RDKit binaries are licensed under the BSD 3‑Clause; any spectra data you train on may have its own licence – please check before distribution.
+* Interactive Plotly.js visualizations
+* Chemical structure rendering and fragment ion analysis
+* Detailed peak data and fragment identifications
+* Bulk analysis capabilities
+* Flexible export options (MSP, PNG)
+* Integrated console output for detailed analyses
 
----
+## 📜 License
 
-## 🙏  Acknowledgements
+Licensed under MIT (see `LICENSE` file).
+RDKit binaries are licensed under BSD 3-Clause. Ensure compliance with licensing for any spectral data used in training.
 
-Built with **RDKit**, **scikit‑learn**, **Svelte** and **Plotly.js**. Many thanks to their respective communities.
+## 🙏 Acknowledgements
 
-## Chat with Spectrum
-
-The Chat with Spectrum feature provides an interactive chat interface integrated directly into the main application interface to help with:
-
-- Understanding mass spectrometry concepts
-- Interpreting SMILES notation
-- Learning about chemical structures
-- Getting explanations about spectral data
-
-### How It Works
-
-The chat interface connects to a language model backend that has been specialized in chemistry and mass spectrometry concepts. Users can ask questions about:
-
-1. General chemistry concepts
-2. SMILES notation interpretation
-3. Mass spectrometry principles
-4. Interpretation of spectral data
-5. Chemical compound information
-
-### Using the Chat
-
-1. Find the "CHAT WITH SPECTRUM" panel on the main interface
-2. Type your question in the input box at the bottom of the panel
-3. Press Enter or click the send button
-4. Receive a response from Spectrum directly within the panel
-
-### Future Enhancements
-
-Planned enhancements for the Chat with Spectrum feature include:
-
-- Integration with your current spectrum data for contextualized answers
-- File upload capabilities for spectral data interpretation
-- Export of chat conversations for documentation
-- Multi-language support
+Built with RDKit, scikit-learn, Svelte, and Plotly.js. Thanks to their respective communities.
