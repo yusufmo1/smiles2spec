@@ -24,4 +24,5 @@ backend/models/feature_mapping.
 __pycache__/
 *.py[cod]
 *$py.class
-backend/models/feature_mapping.json
+backend/models/feature_mapping.jsonbackend/backend/models/spectrum_predictor.pkl
+backend/models/spectrum_predictor.pkl
