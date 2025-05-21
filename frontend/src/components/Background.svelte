@@ -1,5 +1,4 @@
 <script>
-  // no JS needed – pure CSS
 </script>
 
 <div class="bg"></div>
@@ -9,12 +8,13 @@
     position: fixed;
     inset: 0;
     z-index: -1;
-    background: #f7f7f8; /* Lighter base background */
+    background: #f7f7f8; 
     overflow: hidden;
     background: 
-      radial-gradient(circle at 30% 30%, rgba(114, 135, 253, 0.6), transparent 70%),
-      radial-gradient(circle at 70% 70%, rgba(146, 113, 255, 0.6), transparent 70%);
+      radial-gradient(circle at 30% 30%, rgba(114, 135, 253, 0.8), transparent 70%),
+      radial-gradient(circle at 70% 70%, rgba(146, 113, 255, 0.8), transparent 70%);
     filter: blur(60px);
+    animation: shift-bg 20s ease-in-out infinite alternate;
   }
   
   .bg::before {
@@ -32,4 +32,9 @@
     from { transform: scale(1) rotate(0deg); opacity: 0.8; }
     to   { transform: scale(1.2) rotate(5deg); opacity: 1; }
   }
-</style> 
+  
+  @keyframes shift-bg {
+    from { background-position: 0% 0%; }
+    to   { background-position: 3% 3%; }
+  }
+</style>
