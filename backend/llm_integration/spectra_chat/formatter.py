@@ -1,4 +1,6 @@
 """Format spectrum data for inclusion in chat."""
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend that doesn't require GUI
 import base64
 from io import BytesIO
 import logging

@@ -1,4 +1,5 @@
 const API_URL = '/api'; 
+//const API_URL = 'http://192.168.1.211:5050'; 
 
 /**
  * @typedef {Object} SpectrumPredictionResponse
