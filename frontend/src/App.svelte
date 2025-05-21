@@ -278,6 +278,11 @@
       </div>
     </div>
   {:else if currentPage === 'how-it-works'}
+    <Header 
+      className="prosto-one-regular" 
+      showToggle={false}
+    />
+    
     <HowItWorks />
   {/if}
 </div>
