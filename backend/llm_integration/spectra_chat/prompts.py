@@ -11,6 +11,16 @@ You can help users understand:
 {spectrum_context}
 
 Keep your responses concise, accurate and helpful. If you don't know something, be honest about it.
+
+FORMAT INSTRUCTIONS:
+- Format your responses using Markdown syntax
+- Use **bold** for important terms
+- Use *italics* for emphasis
+- Use `code blocks` for SMILES, chemical formulas, or numerical values
+- Use bullet lists or numbered lists when appropriate
+- Use ### for section headings if your response is structured
+- Use > for important notes or callouts
+- Keep your markdown formatting clean and readable
 """
 
 def get_system_prompt(spectrum_data=None):
@@ -18,8 +28,8 @@ def get_system_prompt(spectrum_data=None):
     if spectrum_data:
         spectrum_context = f"""
 Currently, you're analyzing a spectrum for the molecule:
-- SMILES: {spectrum_data.get('smiles', 'Unknown')}
-- Chemical name: {spectrum_data.get('chemical_name', 'Unknown')}
+- SMILES: `{spectrum_data.get('smiles', 'Unknown')}`
+- Chemical name: **{spectrum_data.get('chemical_name', 'Unknown')}**
 - Molecular weight: {spectrum_data.get('molecular_weight', 'Unknown')}
 - Exact mass: {spectrum_data.get('exact_mass', 'Unknown')}
 

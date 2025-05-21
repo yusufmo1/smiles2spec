@@ -1,9 +1,23 @@
 <script>
 	import { writable } from 'svelte/store';
 	import { chatWithSpectrum } from '../services/api';
+	import { marked } from 'marked'; // Import the markdown parser
 
 	export let hasSmilesPrediction = false;
 	export let currentSmiles = null; // New prop to pass the current SMILES
+
+	/* Set up marked options for security */
+	marked.setOptions({
+		gfm: true,
+		breaks: true,
+		sanitize: false // Note: sanitize is deprecated, we'll handle this differently
+	});
+
+	// Function to render markdown safely
+	function renderMarkdown(text) {
+		if (!text) return '';
+		return marked(text);
+	}
 
 	/**
 	 * @typedef {Object} Message
@@ -208,7 +222,11 @@
 							<span class="name">{m.name}</span>
 							<span class="time">{new Date(m.timestamp).toLocaleTimeString()}</span>
 						</div>
-						<p class="text">{m.message || 'Thinking...'}</p>
+						{#if m.thinking}
+							<p class="text">Thinking...</p>
+						{:else}
+							<div class="text markdown-content" innerHTML={renderMarkdown(m.message)}></div>
+						{/if}
 					</div>
 				</div>
 			{/each}
@@ -366,5 +384,74 @@
 		0% { opacity: 0.7; }
 		50% { opacity: 1; }
 		100% { opacity: 0.7; }
+	}
+
+	/* Markdown styling */
+	:global(.markdown-content) {
+		line-height: 1.6;
+	}
+	
+	:global(.markdown-content p) {
+		margin: 0.5rem 0;
+	}
+	
+	:global(.markdown-content h1, .markdown-content h2, .markdown-content h3, 
+			.markdown-content h4, .markdown-content h5, .markdown-content h6) {
+		margin-top: 1rem;
+		margin-bottom: 0.5rem;
+		font-weight: 600;
+	}
+	
+	:global(.markdown-content a) {
+		color: var(--accent);
+		text-decoration: none;
+	}
+	
+	:global(.markdown-content a:hover) {
+		text-decoration: underline;
+	}
+	
+	:global(.markdown-content code) {
+		font-family: 'SF Mono', monospace;
+		background: rgba(0, 0, 0, 0.05);
+		padding: 0.2rem 0.4rem;
+		border-radius: 3px;
+		font-size: 0.85em;
+	}
+	
+	:global(.markdown-content pre) {
+		background: rgba(0, 0, 0, 0.05);
+		padding: 0.75rem;
+		border-radius: 8px;
+		overflow-x: auto;
+		margin: 0.5rem 0;
+	}
+	
+	:global(.markdown-content pre code) {
+		background: transparent;
+		padding: 0;
+	}
+	
+	:global(.markdown-content ul, .markdown-content ol) {
+		padding-left: 1.5rem;
+		margin: 0.5rem 0;
+	}
+	
+	:global(.markdown-content blockquote) {
+		border-left: 3px solid var(--accent-soft);
+		padding-left: 1rem;
+		margin-left: 0;
+		color: var(--text-secondary);
+	}
+	
+	/* Ensure proper display in user messages with light text */
+	.bubble.user :global(.markdown-content code),
+	.bubble.user :global(.markdown-content pre) {
+		background: rgba(255, 255, 255, 0.2);
+	}
+	
+	.bubble.user :global(.markdown-content a) {
+		color: white;
+		text-decoration: underline;
 	}
 </style> 

@@ -27,6 +27,7 @@
     "@ai-sdk/svelte": "^2.1.12",
     "framer-motion": "^12.12.1",
     "jszip": "^3.10.1",
+    "marked": "^15.0.12",
     "openai": "^4.100.0",
     "plotly.js-dist-min": "^3.0.1",
     "sirv-cli": "^2.0.0",
