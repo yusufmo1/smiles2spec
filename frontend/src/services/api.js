@@ -1,4 +1,8 @@
-const API_URL = '/api'; 
+// Base URL for the Flask API. During development the frontend is served
+// separately from the backend, so we prefix all requests with `/api`.
+// In production the Nginx reverse proxy also forwards `/api` to the
+// backend container.
+const API_URL = '/api';
 
 /**
  * @typedef {Object} SpectrumPredictionResponse
@@ -15,7 +19,7 @@ const API_URL = '/api';
  * @returns {Promise<SpectrumPredictionResponse>} The predicted spectrum data
  */
 export async function predictSpectrum(smiles) {
-  const response = await fetch(`${API_URL}/api/predict`, {
+  const response = await fetch(`${API_URL}/predict`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -36,7 +40,7 @@ export async function predictSpectrum(smiles) {
  * @returns {Promise<Blob>} MSP data as text/plain blob
  */
 export async function exportMsp(smiles) {
-  const res = await fetch(`${API_URL}/api/export_msp`, {
+  const res = await fetch(`${API_URL}/export_msp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ smiles })
@@ -51,7 +55,7 @@ export async function exportMsp(smiles) {
  * @returns {Promise<Blob>} MSP data as text/plain blob
  */
 export async function exportMspBatch(smilesList) {
-  const res = await fetch(`${API_URL}/api/export_msp_batch`, {
+  const res = await fetch(`${API_URL}/export_msp_batch`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ smiles_list: smilesList })
@@ -74,7 +78,7 @@ export async function uploadSmilesFile(file) {
   const form = new FormData();
   form.append("file", file);
 
-  const res = await fetch(`${API_URL}/api/smiles_bulk`, {
+  const res = await fetch(`${API_URL}/smiles_bulk`, {
     method: "POST",
     body: form
   });
@@ -99,7 +103,7 @@ export async function uploadSmilesFile(file) {
  * @returns {Promise<ChatResponse>} The response from the API
  */
 export async function chatWithSpectrum(messages) {
-  const res = await fetch(`${API_URL}/api/chat`, {
+  const res = await fetch(`${API_URL}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ messages })
@@ -127,7 +131,7 @@ export async function chatWithSpectrum(messages) {
 export async function generateSmiles(options = {}) {
   const { count = 1, description = '' } = options;
   
-  const response = await fetch(`${API_URL}/api/generate_smiles`, {
+  const response = await fetch(`${API_URL}/generate_smiles`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
