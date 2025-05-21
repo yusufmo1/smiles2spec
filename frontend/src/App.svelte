@@ -263,7 +263,7 @@
       
       <!-- Export Center row -->
       <div class="row">
-        <div class="col-full">
+        <div class="col-half">
           <Panel title="EXPORT CENTER">
             <ExportCenter 
               spectrumData={spectrumData}
@@ -274,6 +274,9 @@
               smilesList={bulkList}
             />
           </Panel>
+        </div>
+        <div class="col-half">
+          <!-- Intentionally left blank for UI consistency -->
         </div>
       </div>
     </div>
