@@ -8,24 +8,25 @@ frontend/node_modules/
 */public/build/
 frontend/public/build/
 
-# Other files to ignore
-.DS_Store
-backend/models/spectrum_predictor.pkl
-.venv
-.vscode
-.cursorignore
-.env
-.gitignore
-__pycache__/
-*.pyc
-package-lock.json
-backend/models/feature_preprocessor.pkl
-backend/models/feature_mapping.
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-backend/models/feature_mapping.json
+.venv
+
+# Large model files
 backend/models/spectrum_predictor.pkl
+backend/models/feature_preprocessor.pkl
 backend/models/feature_mapping.json
-backend/models/*backend/backend/models/spectrum_predictor.pkl
-backend/models/spectrum_predictor.pkl
+backend/backend/models/spectrum_predictor.pkl
+
+# Environment and configuration
+.env
+.vscode
+.cursorignore
+
+# System files
+.DS_Store
+
+# Package files
+package-lock.json
