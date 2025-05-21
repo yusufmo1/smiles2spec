@@ -98,16 +98,15 @@ export async function uploadSmilesFile(file) {
  * @param {Message[]} messages - Array of message objects with role and content
  * @param {Object} [options] - Additional options for the chat
  * @param {string} [options.smiles] - SMILES string to include with the chat
- * @param {boolean} [options.stream=false] - Whether to stream the response
  * @param {function} [options.onChunk] - Callback for streaming chunks
- * @returns {Promise<ChatResponse|ReadableStream>} The response from the API
+ * @returns {Promise<void>} A promise that resolves when the stream is complete
  */
 export async function chatWithSpectrum(messages, options = {}) {
-  const { smiles, stream = false, onChunk } = options;
+  const { smiles, onChunk } = options;
   
   const payload = { 
     messages,
-    stream
+    stream: true
   };
   
   // Include SMILES if provided for spectrum visualization
@@ -115,94 +114,81 @@ export async function chatWithSpectrum(messages, options = {}) {
     payload.smiles = smiles;
   }
   
-  // Handle streaming response
-  if (stream) {
-    try {
-      const response = await fetch(`${API_URL}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Chat request failed: ${response.status}`);
-      }
-      
-      // Setup event stream processing
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      
-      // Return a promise that resolves when the stream is complete
-      return new Promise((resolve, reject) => {
-        async function processStream() {
-          try {
-            while (true) {
-              const { done, value } = await reader.read();
-              
-              if (done) {
-                // Flush any remaining content in buffer
-                if (buffer.trim() && typeof onChunk === 'function') {
-                  try {
-                    const parsed = JSON.parse(buffer.trim());
-                    if (parsed.chunk) onChunk(parsed.chunk);
-                  } catch (e) {
-                    // Skip invalid JSON
-                  }
-                }
-                resolve();
-                break;
-              }
-              
-              // Decode chunk and add to buffer
-              buffer += decoder.decode(value, { stream: true });
-              
-              // Process complete lines from buffer
-              let lineEnd;
-              while ((lineEnd = buffer.indexOf('\n')) !== -1) {
-                const line = buffer.slice(0, lineEnd).trim();
-                buffer = buffer.slice(lineEnd + 1);
-                
-                if (line.startsWith('data: ')) {
-                  const data = line.slice(6);
-                  
-                  if (data === '[DONE]') {
-                    resolve();
-                    break;
-                  }
-                  
-                  try {
-                    const parsed = JSON.parse(data);
-                    if (parsed.chunk && typeof onChunk === 'function') {
-                      onChunk(parsed.chunk);
-                    }
-                  } catch (e) {
-                    // Skip invalid JSON
-                  }
-                }
-              }
-            }
-          } catch (error) {
-            reject(error);
-          }
-        }
-        
-        processStream();
-      });
-    } catch (error) {
-      console.error("Streaming error:", error);
-      throw error;
-    }
-  } else {
-    // Regular non-streaming response
-    const res = await fetch(`${API_URL}/api/chat`, {
+  try {
+    const response = await fetch(`${API_URL}/api/chat`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     });
     
-    if (!res.ok) throw new Error(`Chat request failed: ${res.status}`);
-    return res.json(); // { message: "response text" }
+    if (!response.ok) {
+      throw new Error(`Chat request failed: ${response.status}`);
+    }
+    
+    // Setup event stream processing
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    
+    // Return a promise that resolves when the stream is complete
+    return new Promise((resolve, reject) => {
+      async function processStream() {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) {
+              // Flush any remaining content in buffer
+              if (buffer.trim() && typeof onChunk === 'function') {
+                try {
+                  const parsed = JSON.parse(buffer.trim());
+                  if (parsed.chunk) onChunk(parsed.chunk);
+                } catch (e) {
+                  // Skip invalid JSON
+                }
+              }
+              resolve();
+              break;
+            }
+            
+            // Decode chunk and add to buffer
+            buffer += decoder.decode(value, { stream: true });
+            
+            // Process complete lines from buffer
+            let lineEnd;
+            while ((lineEnd = buffer.indexOf('\n')) !== -1) {
+              const line = buffer.slice(0, lineEnd).trim();
+              buffer = buffer.slice(lineEnd + 1);
+              
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                
+                if (data === '[DONE]') {
+                  resolve();
+                  break;
+                }
+                
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.chunk && typeof onChunk === 'function') {
+                    onChunk(parsed.chunk);
+                  }
+                } catch (e) {
+                  // Skip invalid JSON
+                }
+              }
+            }
+          }
+        } catch (error) {
+          reject(error);
+        }
+      }
+      
+      processStream();
+    });
+  } catch (error) {
+    console.error("Streaming error:", error);
+    throw error;
   }
 }
 

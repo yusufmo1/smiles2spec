@@ -27,7 +27,6 @@
 	 * @property {string} message
 	 * @property {string} timestamp
 	 * @property {string} type
-	 * @property {boolean} [thinking]
 	 */
 
 	/**
@@ -77,8 +76,7 @@
 			if (msgIndex !== -1) {
 				updatedMessages[msgIndex] = {
 					...updatedMessages[msgIndex],
-					message: updatedMessages[msgIndex].message + chunk,
-					thinking: false
+					message: updatedMessages[msgIndex].message + chunk
 				};
 			}
 			
@@ -120,65 +118,21 @@
 				name: 'Spectrum',
 				message: '', // Will be filled by streaming content
 				timestamp: new Date().toISOString(),
-				type: 'assistant',
-				thinking: true
+				type: 'assistant'
 			}
 		]);
 
 		try {
-			// Use streaming or regular response based on availability
-			if ('ReadableStream' in window) {
-				// Include current SMILES if available
-				const chatOptions = {
-					stream: true,
-					onChunk: handleStreamChunk
-				};
-				
-				if (currentSmiles) {
-					chatOptions.smiles = currentSmiles;
-				}
-				
-				await chatWithSpectrum(history, chatOptions);
-				
-				// Update message to show it's no longer streaming
-				messages.update(m => {
-					const updatedMessages = [...m];
-					const msgIndex = updatedMessages.findIndex(msg => msg.id === streamingMessageId);
-					
-					if (msgIndex !== -1) {
-						updatedMessages[msgIndex] = {
-							...updatedMessages[msgIndex],
-							thinking: false
-						};
-					}
-					
-					return updatedMessages;
-				});
-			} else {
-				// Fall back to non-streaming if ReadableStream not supported
-				const chatOptions = {};
-				if (currentSmiles) {
-					chatOptions.smiles = currentSmiles;
-				}
-				
-				const { message } = await chatWithSpectrum(history, chatOptions);
-				
-				// Replace placeholder message with actual response
-				messages.update(m => {
-					const updatedMessages = [...m];
-					const msgIndex = updatedMessages.findIndex(msg => msg.id === streamingMessageId);
-					
-					if (msgIndex !== -1) {
-						updatedMessages[msgIndex] = {
-							...updatedMessages[msgIndex],
-							message,
-							thinking: false
-						};
-					}
-					
-					return updatedMessages;
-				});
+			// Include current SMILES if available
+			const chatOptions = {
+				onChunk: handleStreamChunk
+			};
+			
+			if (currentSmiles) {
+				chatOptions.smiles = currentSmiles;
 			}
+			
+			await chatWithSpectrum(history, chatOptions);
 		} catch (e) {
 			messages.update(m => {
 				const updatedMessages = [...m];
@@ -187,8 +141,7 @@
 				if (msgIndex !== -1) {
 					updatedMessages[msgIndex] = {
 						...updatedMessages[msgIndex],
-						message: 'Sorry – something went wrong. Try again?',
-						thinking: false
+						message: 'Sorry – something went wrong. Try again?'
 					};
 				}
 				
@@ -215,18 +168,14 @@
 	<div class="chat-window">
 		<div class="messages" bind:this={chatEl}>
 			{#each $messages as m}
-				<div class="bubble {m.type} {m.thinking ? 'thinking' : ''}">
+				<div class="bubble {m.type}">
 					<img class="avatar" alt={m.name} src={m.avatar} />
 					<div class="content">
 						<div class="header">
 							<span class="name">{m.name}</span>
 							<span class="time">{new Date(m.timestamp).toLocaleTimeString()}</span>
 						</div>
-						{#if m.thinking}
-							<p class="text">Thinking...</p>
-						{:else}
-							<div class="text markdown-content" innerHTML={renderMarkdown(m.message)}></div>
-						{/if}
+						<div class="text markdown-content" innerHTML={renderMarkdown(m.message)}></div>
 					</div>
 				</div>
 			{/each}
@@ -369,21 +318,6 @@
 		position: relative;
 		z-index: 2;      /* sit on top of the gradient */
 		line-height: 1;   /* no extra vertical space */
-	}
-
-	/* Add animation for "thinking" state */
-	.bubble.thinking .text {
-		opacity: 0.7;
-	}
-	
-	.bubble.thinking .content {
-		animation: pulse 1.5s infinite;
-	}
-	
-	@keyframes pulse {
-		0% { opacity: 0.7; }
-		50% { opacity: 1; }
-		100% { opacity: 0.7; }
 	}
 
 	/* Markdown styling */
