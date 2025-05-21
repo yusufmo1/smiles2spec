@@ -1,5 +1,14 @@
+# Node dependencies
 /node_modules/
+*/node_modules/
+frontend/node_modules/
+
+# Build directories
 /public/build/
+*/public/build/
+frontend/public/build/
+
+# Other files to ignore
 .DS_Store
 backend/models/spectrum_predictor.pkl
 .venv
@@ -7,5 +16,6 @@ backend/models/spectrum_predictor.pkl
 .cursorignore
 .env
 .gitignore
-.pycache
-.pyc
+__pycache__/
+*.pyc
+package-lock.json
