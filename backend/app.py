@@ -2,7 +2,7 @@
 Flask API for mass spectrometry prediction service.
 """
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 from flask_cors import CORS
 import os
 import json
@@ -10,8 +10,7 @@ import requests
 from .prediction_service import PredictionService
 from .config import API_CONFIG
 from .utils import logger, convert_np_to_list, smiles_to_png_base64
-from .llm_integration.chat_service import generate_chat_response
-from .llm_integration.smiles_generator import generate_random_smiles
+from .llm_integration import generate_chat_response, generate_smiles
 from .model_downloader import initialize_models
 
 # Try to download models if they don't exist
@@ -195,21 +194,58 @@ def smiles_bulk():
 def chat():
     """
     API endpoint for chat functionality.
-    Accepts messages in the format: 
-    { "messages": [{"role": "user"|"assistant", "content": "message"}] }
+    
+    Accepts:
+    {
+        "messages": [{"role": "user"|"assistant", "content": "message"}],
+        "stream": true|false,
+        "smiles": "CCC" (optional)
+    }
     """
     try:
         data = request.json
         messages = data.get('messages', [])
+        stream = data.get('stream', False)
+        smiles = data.get('smiles')
+        
+        logger.debug(f"Chat API request: stream={stream}, smiles={smiles}, messages_count={len(messages)}")
         
         if not messages:
             return jsonify({"error": "No messages provided"}), 400
         
-        message = generate_chat_response(messages)
-        
-        return jsonify({"message": message})
+        # Get spectrum data if SMILES provided
+        spectrum_data = None
+        if smiles:
+            try:
+                spectrum_data = prediction_service.predict_spectrum_from_smiles(smiles)
+                logger.info(f"Generated spectrum data for SMILES: {smiles}")
+            except Exception as e:
+                logger.error(f"Error generating spectrum data: {str(e)}", exc_info=True)
+                # Continue without spectrum data
+            
+        if stream:
+            def generate():
+                try:
+                    for chunk in generate_chat_response(messages, spectrum_data, stream=True):
+                        yield f"data: {json.dumps({'chunk': chunk})}\n\n"
+                    yield "data: [DONE]\n\n"
+                except Exception as e:
+                    logger.error(f"Error in streaming response: {str(e)}", exc_info=True)
+                    yield f"data: {json.dumps({'chunk': f'Error: {str(e)}'})}\n\n"
+                    yield "data: [DONE]\n\n"
+                
+            return Response(generate(), mimetype='text/event-stream')
+        else:
+            # For non-streaming requests, we need to get the full response as a string
+            message = generate_chat_response(messages, spectrum_data, stream=False)
+            # If it's a generator (which it shouldn't be for non-streaming), get the content
+            if hasattr(message, '__iter__') and not isinstance(message, (str, dict, list)):
+                message = "".join(message)
+            logger.debug(f"Chat API response: {message[:50]}...")
+            return jsonify({"message": message})
+            
     except Exception as e:
-        logger.error(f"Chat API error: {str(e)}")
+        logger.error(f"Chat API error: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/generate_smiles', methods=['POST'])
@@ -220,11 +256,34 @@ def generate_smiles():
         count = max(1, min(10, data.get('count', 1)))  # Limit between 1-10
         description = data.get('description', '')
         
-        smiles_list = generate_random_smiles(count=count, description=description)
+        logger.info(f"Generate SMILES API request: count={count}, description='{description}'")
         
+        # Import here to avoid circular imports
+        from .llm_integration import generate_smiles as generate_smiles_func
+        
+        # Try up to 3 times to get valid results
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            logger.info(f"Attempt {attempt+1}/{max_attempts} for SMILES generation")
+            smiles_list = generate_smiles_func(count=count, description=description)
+            
+            # If we got non-fallback results, return them
+            if smiles_list and smiles_list[0] != "C":
+                logger.info(f"Generate SMILES API response (attempt {attempt+1}): {smiles_list}")
+                return jsonify({"smiles": smiles_list})
+            
+            logger.warning(f"Got fallback SMILES on attempt {attempt+1}, retrying...")
+        
+        # If all attempts failed, try a more specific description
+        logger.warning("All attempts failed with original description, trying with more specific prompt")
+        enhanced_description = f"a {description} with explicit chemical structure"
+        smiles_list = generate_smiles_func(count=count, description=enhanced_description)
+        
+        logger.info(f"Generate SMILES API response (enhanced prompt): {smiles_list}")
         return jsonify({"smiles": smiles_list})
+        
     except Exception as e:
-        logger.error(f"SMILES generation error: {str(e)}")
+        logger.error(f"SMILES generation error: {str(e)}", exc_info=True)
         # Return a simple molecule if generation fails
         return jsonify({"smiles": ["C"] * max(1, min(10, request.json.get('count', 1)))}), 500
 

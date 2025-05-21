@@ -3,6 +3,7 @@
 	import { chatWithSpectrum } from '../services/api';
 
 	export let hasSmilesPrediction = false;
+	export let currentSmiles = null; // New prop to pass the current SMILES
 
 	/**
 	 * @typedef {Object} Message
@@ -40,6 +41,7 @@
 	/** @type {HTMLDivElement} */
 	let chatEl;
 	let loading = false;
+	let streamingMessageId = null;
 	
 	/* computed values ----------------------------------------------------- */
 	$: canSend = userMessage.trim().length > 0 && !loading;
@@ -49,6 +51,26 @@
 		setTimeout(() => chatEl?.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' }), 40);
 
 	$: scrollToBottom();               // whenever $messages changes
+	
+	// Handler for streaming message chunks
+	function handleStreamChunk(chunk) {
+		if (!streamingMessageId) return;
+		
+		messages.update(m => {
+			const updatedMessages = [...m];
+			const msgIndex = updatedMessages.findIndex(msg => msg.id === streamingMessageId);
+			
+			if (msgIndex !== -1) {
+				updatedMessages[msgIndex] = {
+					...updatedMessages[msgIndex],
+					message: updatedMessages[msgIndex].message + chunk,
+					thinking: false
+				};
+			}
+			
+			return updatedMessages;
+		});
+	}
 
 	async function send() {
 		if (!userMessage.trim() || loading) return;
@@ -72,14 +94,17 @@
 		userMessage = '';
 		loading = true;
 
-		/* optimistic "thinking…" bubble */
+		/* Create assistant message for streaming */
+		const assistantId = userId + 1;
+		streamingMessageId = assistantId;
+		
 		messages.update((m) => [
 			...m,
 			{
-				id: userId + 1,
+				id: assistantId,
 				avatar: '/assets/images/spectra-avatar.png',
 				name: 'Spectrum',
-				message: 'Thinking…',
+				message: '', // Will be filled by streaming content
 				timestamp: new Date().toISOString(),
 				type: 'assistant',
 				thinking: true
@@ -87,34 +112,77 @@
 		]);
 
 		try {
-			const { message } = await chatWithSpectrum(history);
-			messages.update((m) => m.filter((x) => !x.thinking));
-			messages.update((m) => [
-				...m,
-				{
-					id: userId + 2,
-					avatar: '/assets/images/spectra-avatar.png',
-					name: 'Spectrum',
-					message,
-					timestamp: new Date().toISOString(),
-					type: 'assistant'
+			// Use streaming or regular response based on availability
+			if ('ReadableStream' in window) {
+				// Include current SMILES if available
+				const chatOptions = {
+					stream: true,
+					onChunk: handleStreamChunk
+				};
+				
+				if (currentSmiles) {
+					chatOptions.smiles = currentSmiles;
 				}
-			]);
+				
+				await chatWithSpectrum(history, chatOptions);
+				
+				// Update message to show it's no longer streaming
+				messages.update(m => {
+					const updatedMessages = [...m];
+					const msgIndex = updatedMessages.findIndex(msg => msg.id === streamingMessageId);
+					
+					if (msgIndex !== -1) {
+						updatedMessages[msgIndex] = {
+							...updatedMessages[msgIndex],
+							thinking: false
+						};
+					}
+					
+					return updatedMessages;
+				});
+			} else {
+				// Fall back to non-streaming if ReadableStream not supported
+				const chatOptions = {};
+				if (currentSmiles) {
+					chatOptions.smiles = currentSmiles;
+				}
+				
+				const { message } = await chatWithSpectrum(history, chatOptions);
+				
+				// Replace placeholder message with actual response
+				messages.update(m => {
+					const updatedMessages = [...m];
+					const msgIndex = updatedMessages.findIndex(msg => msg.id === streamingMessageId);
+					
+					if (msgIndex !== -1) {
+						updatedMessages[msgIndex] = {
+							...updatedMessages[msgIndex],
+							message,
+							thinking: false
+						};
+					}
+					
+					return updatedMessages;
+				});
+			}
 		} catch (e) {
-			messages.update((m) => m.filter((x) => !x.thinking));
-			messages.update((m) => [
-				...m,
-				{
-					id: userId + 2,
-					avatar: '/assets/images/spectra-avatar.png',
-					name: 'Spectrum',
-					message: 'Sorry – something went wrong. Try again?',
-					timestamp: new Date().toISOString(),
-					type: 'assistant'
+			messages.update(m => {
+				const updatedMessages = [...m];
+				const msgIndex = updatedMessages.findIndex(msg => msg.id === streamingMessageId);
+				
+				if (msgIndex !== -1) {
+					updatedMessages[msgIndex] = {
+						...updatedMessages[msgIndex],
+						message: 'Sorry – something went wrong. Try again?',
+						thinking: false
+					};
 				}
-			]);
+				
+				return updatedMessages;
+			});
 		} finally {
 			loading = false;
+			streamingMessageId = null;
 		}
 	}
 
@@ -133,14 +201,14 @@
 	<div class="chat-window">
 		<div class="messages" bind:this={chatEl}>
 			{#each $messages as m}
-				<div class="bubble {m.type}">
+				<div class="bubble {m.type} {m.thinking ? 'thinking' : ''}">
 					<img class="avatar" alt={m.name} src={m.avatar} />
 					<div class="content">
 						<div class="header">
 							<span class="name">{m.name}</span>
 							<span class="time">{new Date(m.timestamp).toLocaleTimeString()}</span>
 						</div>
-						<p class="text">{m.message}</p>
+						<p class="text">{m.message || 'Thinking...'}</p>
 					</div>
 				</div>
 			{/each}
@@ -283,5 +351,20 @@
 		position: relative;
 		z-index: 2;      /* sit on top of the gradient */
 		line-height: 1;   /* no extra vertical space */
+	}
+
+	/* Add animation for "thinking" state */
+	.bubble.thinking .text {
+		opacity: 0.7;
+	}
+	
+	.bubble.thinking .content {
+		animation: pulse 1.5s infinite;
+	}
+	
+	@keyframes pulse {
+		0% { opacity: 0.7; }
+		50% { opacity: 1; }
+		100% { opacity: 0.7; }
 	}
 </style> 

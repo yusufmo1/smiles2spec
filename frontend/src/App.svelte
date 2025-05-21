@@ -256,7 +256,10 @@
         </div>
         <div class="col-half">
           <Panel title="CHAT WITH SPECTRUM">
-            <ChatWithSpectrum hasSmilesPrediction={hasFirstPrediction} />
+            <ChatWithSpectrum 
+              hasSmilesPrediction={hasFirstPrediction}
+              currentSmiles={currentSmiles} 
+            />
           </Panel>
         </div>
       </div>
