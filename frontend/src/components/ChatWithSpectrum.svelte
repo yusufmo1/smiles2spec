@@ -3,8 +3,9 @@
 	import { chatWithSpectrum } from '../services/api';
 	import { marked } from 'marked'; // Import the markdown parser
 
-	export let hasSmilesPrediction = false;
-	export let currentSmiles = null; // New prop to pass the current SMILES
+        export let hasSmilesPrediction = false;
+        export let currentSmiles = null; // New prop to pass the current SMILES
+        export let isCarousel = false;
 
 	/* Set up marked options for security */
 	marked.setOptions({
@@ -83,8 +84,16 @@
 	$: canSend = userMessage.trim().length > 0 && !loading;
 
 	/* helpers ------------------------------------------------------------- */
-	const scrollToBottom = () =>
-		setTimeout(() => chatEl?.scrollTo({ top: chatEl.scrollHeight, behavior: 'smooth' }), 40);
+        const scrollToBottom = () => {
+                if (chatEl) {
+                        setTimeout(() => {
+                                chatEl.scrollTo({
+                                        top: chatEl.scrollHeight,
+                                        behavior: isCarousel ? 'auto' : 'smooth'
+                                });
+                        }, isCarousel ? 10 : 40);
+                }
+        };
 
 	$: scrollToBottom();               // whenever $messages changes
 	
@@ -396,9 +405,9 @@
 		text-decoration: none;
 	}
 	
-	:global(.markdown-content a:hover) {
-		text-decoration: underline;
-	}
+:global(.markdown-content a:hover) {
+                text-decoration: underline;
+        }
 	
 	:global(.markdown-content code) {
 		font-family: 'SF Mono', monospace;
@@ -439,8 +448,17 @@
 		background: rgba(255, 255, 255, 0.2);
 	}
 	
-	.bubble.user :global(.markdown-content a) {
-		color: white;
-		text-decoration: underline;
-	}
-</style> 
+        .bubble.user :global(.markdown-content a) {
+                color: white;
+                text-decoration: underline;
+        }
+
+        :global(.carousel) .chat-window {
+                height: 100%;
+                max-height: none;
+        }
+
+        :global(.carousel) .messages {
+                max-height: calc(100% - 80px);
+        }
+</style>

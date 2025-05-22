@@ -1,72 +1,59 @@
 <script>
   import { focusedPanel, carouselIndex } from '../stores.js';
-  import { onMount } from 'svelte';
+  import PanelRenderer from './PanelRenderer.svelte';
 
+  export let id;
   export let title = '';
-  let htmlString;          // will hold the rendered markup
-  let panelEl;             // bind:this element
+  export let component;
+  export let props = {};
+  export let clickable = true;
+  export let isCarousel = false;
 
-  // after mount grab our outerHTML so we can clone into overlay
-  onMount(() => {
-    htmlString = panelEl.outerHTML;
-  });
+  let panelEl;
 
   function handleClick(event) {
-    // block if some other panel is already focused
-    if ($focusedPanel) return;
+    if (!clickable || $focusedPanel) return;
 
-    // Check if the click target is a button or a child of a button
     let target = event.target;
     while (target && target !== panelEl) {
-      // Extend check to include textarea, input, and elements with contenteditable
-      if (target.tagName === 'BUTTON' || 
-          target.tagName === 'TEXTAREA' || 
-          target.tagName === 'INPUT' ||
-          target.getAttribute('contenteditable') === 'true' ||
-          target.getAttribute('role') === 'button' ||
-          target.classList.contains('button') ||
-          target.closest('button')) {
-        // If clicking on an interactive element, do not enter carousel mode
+      if (isInteractiveElement(target)) {
         event.stopPropagation();
         return;
       }
       target = target.parentElement;
     }
 
-    /* Send the actual element instead of outerHTML */
-    focusedPanel.set(panelEl);
-    
-    // Find this panel's index among all panels and set the carouselIndex
-    const allPanels = Array.from(document.querySelectorAll('.panel'));
-    const clickedIndex = allPanels.indexOf(panelEl);
-    if (clickedIndex !== -1) {
-      carouselIndex.set(clickedIndex);
+    focusedPanel.set(id);
+
+    const panelOrder = ['spectrum', 'fragments', 'structure', 'peaks', 'console', 'chat'];
+    const index = panelOrder.indexOf(id);
+    if (index !== -1) {
+      carouselIndex.set(index);
     }
   }
-  
-  function handleKeyDown(event) {
-    // Don't capture space or enter if the event target is a form control
-    if (event.target.tagName === 'TEXTAREA' || 
-        event.target.tagName === 'INPUT' || 
-        event.target.getAttribute('contenteditable') === 'true') {
-      return;
-    }
-    
-    if (event.key === 'Enter' || event.key === ' ') {
-      handleClick(event);
-      event.preventDefault();
-    }
+
+  function isInteractiveElement(element) {
+    return element.tagName === 'BUTTON' ||
+           element.tagName === 'TEXTAREA' ||
+           element.tagName === 'INPUT' ||
+           element.tagName === 'SELECT' ||
+           element.getAttribute('contenteditable') === 'true' ||
+           element.getAttribute('role') === 'button' ||
+           element.classList.contains('clickable') ||
+           element.closest('button, textarea, input, select, [contenteditable="true"], [role="button"]');
   }
 </script>
 
-<div 
-  bind:this={panelEl} 
-  class="glass-card panel" 
+<div
+  bind:this={panelEl}
+  class="glass-card panel"
+  class:clickable
+  class:carousel={isCarousel}
+  data-panel-id={id}
   on:click={handleClick}
-  on:keydown={handleKeyDown}
-  tabindex="0"
-  role="button"
-  aria-label={title ? `Expand ${title} panel` : 'Expand panel'}
+  tabindex={clickable ? "0" : "-1"}
+  role={clickable ? "button" : "region"}
+  aria-label={title ? `${isCarousel ? 'View' : 'Expand'} ${title} panel` : 'Panel'}
 >
   {#if title}
     <header>
@@ -76,8 +63,9 @@
       </div>
     </header>
   {/if}
+
   <div class="panel-content">
-    <slot />
+    <PanelRenderer {component} {props} {isCarousel} />
   </div>
 </div>
 
@@ -90,24 +78,23 @@
     overflow: hidden !important;
     border-radius: var(--enforce-pill);
     position: relative;
-    cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
   }
-  
-  .panel:hover {
+
+  .panel.carousel {
+    height: 100%;
+    max-height: 90vh;
+  }
+
+  .panel.clickable {
+    cursor: pointer;
+  }
+
+  .panel.clickable:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
   }
-  
-  .panel:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-  
-  .panel:focus:not(:focus-visible) {
-    outline: none;
-  }
-  
+
   header {
     font-size: 13px;
     font-weight: 600;
@@ -124,12 +111,12 @@
     height: 65px;
     box-sizing: border-box;
   }
-  
+
   .title-wrapper {
     display: flex;
     align-items: center;
   }
-  
+
   .title-dot {
     width: 10px;
     height: 10px;
@@ -138,7 +125,7 @@
     margin-right: 1rem;
     box-shadow: 0 0 12px var(--accent-soft);
   }
-  
+
   h2 {
     margin: 0;
     font-size: 14px;
@@ -148,7 +135,7 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-  
+
   .panel-content {
     flex: 1;
     padding: 1.75rem;
@@ -158,8 +145,7 @@
     z-index: 1;
     box-sizing: border-box;
   }
-  
-  /* Subtle inner glow effect */
+
   .panel-content::after {
     content: '';
     position: absolute;
@@ -168,4 +154,4 @@
     pointer-events: none;
     z-index: -1;
   }
-</style> 
+</style>

@@ -2,19 +2,14 @@
 	import { onMount, tick } from 'svelte';
 	import Header from './components/Header.svelte';
 	import SmilesInput from './components/SmilesInput.svelte';
-	import SpectrumPlot from './components/SpectrumPlot.svelte';
-	import IonFragmentation from './components/IonFragmentation.svelte';
-	import PeakTable from './components/PeakTable.svelte';
-	import ConsoleOutput from './components/ConsoleOutput.svelte';
-	import Panel from './components/Panel.svelte';
-	import Background from './components/Background.svelte';
-	import StructurePanel from './components/StructurePanel.svelte';
-	import BulkNavigator from './components/BulkNavigator.svelte';
-	import PanelOverlay from './components/PanelOverlay.svelte';
-	import ExportCenter from './components/ExportCenter.svelte';
-	import Navbar from './components/Navbar.svelte';
-	import HowItWorks from './components/HowItWorks.svelte';
-	import ChatWithSpectrum from './components/ChatWithSpectrum.svelte';
+import Background from './components/Background.svelte';
+import PanelGrid from './components/PanelGrid.svelte';
+import Panel from './components/Panel.svelte';
+        import BulkNavigator from './components/BulkNavigator.svelte';
+        import PanelOverlay from './components/PanelOverlay.svelte';
+        import ExportCenter from './components/ExportCenter.svelte';
+        import Navbar from './components/Navbar.svelte';
+        import HowItWorks from './components/HowItWorks.svelte';
 	import { predictSpectrum } from './services/api.js';
 	import { isCarouselMode, focusedPanel, carouselIndex } from './stores.js';
 	import { get } from 'svelte/store';
@@ -133,28 +128,17 @@
 	}
 	
 	// Handle carousel toggle
-	async function handleToggle(val) {
-		isCarouselMode.set(val);
-		
-		if (val) {
-			// wait for next tick to ensure DOM is updated
-			await tick();
-			
-			// If no panel is focused yet, select the first one
-			if (!$focusedPanel) {
-				const firstPanel = document.querySelector('.panel');
-				if (firstPanel) {
-					focusedPanel.set(firstPanel);
-					
-					// Also set the carousel index to 0 for the first panel
-					carouselIndex.set(0);
-				}
-			}
-		} else {
-			// close overlay
-			focusedPanel.set(null);
-		}
-	}
+        async function handleToggle(val) {
+                isCarouselMode.set(val);
+
+                if (val) {
+                        await tick();
+                        focusedPanel.set('spectrum');
+                        carouselIndex.set(0);
+                } else {
+                        focusedPanel.set(null);
+                }
+        }
 	
 	// Handle page navigation from the navbar
 	function handlePageChange(newPage) {
@@ -219,50 +203,16 @@
         </div>
       {/if}
       
-      <!-- Main visualization section with two equal columns -->
-      <div class="row">
-        <div class="col-half">
-          <Panel title="MASS SPECTRUM">
-            <SpectrumPlot spectrumData={spectrumData} />
-          </Panel>
-        </div>
-        <div class="col-half">
-          <Panel title="TOP FRAGMENT IONS">
-            <IonFragmentation data={spectrumData} />
-          </Panel>
-        </div>
-      </div>
-      
-      <!-- Chemical structure and fragment ions row -->
-      <div class="row">
-        <div class="col-half">
-          <Panel title="CHEMICAL STRUCTURE">
-            <StructurePanel png={structurePNG} />
-          </Panel>
-        </div>
-        <div class="col-half">
-          <Panel title="PEAK DATA TABLE">
-            <PeakTable peaks={peakData} smiles={currentSmiles} />
-          </Panel>
-        </div>
-      </div>
-      
-      <!-- Bottom row with Console Output and Chat -->
-      <div class="row">
-        <div class="col-half">
-          <Panel title="ANALYSIS CONSOLE">
-            <ConsoleOutput output={consoleText} />
-          </Panel>
-        </div>
-        <div class="col-half">
-          <Panel title="CHAT WITH SPECTRUM">
-            <ChatWithSpectrum 
-              hasSmilesPrediction={hasFirstPrediction}
-              currentSmiles={currentSmiles} 
-            />
-          </Panel>
-        </div>
-      </div>
+      <PanelGrid
+        {spectrumData}
+        {peakData}
+        {structurePNG}
+        {currentSmiles}
+        {currentName}
+        {consoleText}
+        {hasFirstPrediction}
+        smilesList={bulkList}
+      />
       
       <!-- Export Center row -->
       <div class="row">

@@ -1,20 +1,15 @@
 <script>
-  import { onMount, afterUpdate } from 'svelte';
+  import { onMount } from 'svelte';
   import Plotly from 'plotly.js-dist-min';
   import { defaultTheme, defaultConfig, createLightModePlot } from '../services/plotlyTheme.js';
-  import { focusedPanel } from '../stores.js';
-  
+
   export let spectrumData = null;
+  export let isCarousel = false;
   let plotElement;
-  let isInCarousel = false;
-  
-  // Check if component is in carousel when panel is focused
-  $: isInCarousel = $focusedPanel !== null;
-  
-  // Force re-render when this component is shown in the carousel
-  $: if ($focusedPanel && plotElement && spectrumData) {
-    // Short delay to ensure DOM is ready
-    setTimeout(() => renderPlot(), 100);
+
+  // Delay render in carousel mode to ensure proper sizing
+  $: if (isCarousel && plotElement && spectrumData) {
+    setTimeout(() => renderPlot(), 200);
   }
   
   $: if (plotElement && spectrumData) {
@@ -68,7 +63,7 @@
       title: {
         text: 'Mass Spectrum',
         font: {
-          size: 0, // Hide title as it's in the panel header
+          size: 0,
           color: 'var(--text-primary)'
         }
       },
@@ -93,6 +88,7 @@
       },
       autosize: true,
       responsive: true,
+      margin: isCarousel ? { l: 50, r: 30, b: 40, t: 20 } : { l: 60, r: 40, b: 50, t: 25 },
       hovermode: 'closest' // Consistent hover behavior
     };
     

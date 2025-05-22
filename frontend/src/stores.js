@@ -7,4 +7,10 @@ export const focusedPanel = writable(null);
 export const carouselIndex = writable(0);
 
 /** Whether the app is currently in carousel mode */
-export const isCarouselMode = writable(false); 
+export const isCarouselMode = writable(false);
+
+/** Track when panel props have been initialized */
+export const panelPropsReady = writable(false);
+
+/** Enable or disable data sync between views */
+export const carouselDataSync = writable(true);
