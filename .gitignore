@@ -1,0 +1,39 @@
+# Node dependencies
+/node_modules/
+*/node_modules/
+frontend/node_modules/
+
+# Build directories
+/public/build/
+*/public/build/
+frontend/public/build/
+frontend/build/*
+frontend/.svelte-kit/
+frontend/build/_app/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv
+
+# Large model files
+backend/models/spectrum_predictor.pkl
+backend/models/feature_preprocessor.pkl
+backend/models/feature_mapping.json
+backend/backend/models/spectrum_predictor.pkl
+
+# Environment and configuration
+.env
+.vscode
+.cursorignore
+
+# System files
+.DS_Store
+
+# Package files
+package-lock.jsonfrontend/.svelte-kit/
+frontend/build/_app/
+CLAUDE.md
+RULES.md
+tasks.md

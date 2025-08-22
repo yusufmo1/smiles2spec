@@ -1,0 +1,24 @@
+{
+  "name": "Mass Spectrum Predictor",
+  "short_name": "MS Predictor",
+  "description": "Predict high-resolution LC-ESI-qTOF mass spectra from SMILES notation using advanced machine learning models",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#f4f5f7",
+  "background_color": "#f4f5f7",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "start_url": "/",
+  "scope": "/",
+  "lang": "en"
+}

@@ -1,0 +1,44 @@
+/* Shared animation utilities for panels */
+
+/* Hover lift effect - used by cards, panels, buttons */
+.hover-lift {
+  transition:
+    transform var(--transition-smooth),
+    box-shadow var(--transition-smooth);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+/* Subtle hover lift - for smaller elements */
+.hover-lift-subtle {
+  transition:
+    transform var(--transition-smooth),
+    box-shadow var(--transition-smooth);
+}
+
+.hover-lift-subtle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Transition timing variables */
+:root {
+  --transition-fast: 0.15s ease;
+  --transition-smooth: 0.25s ease;
+  --transition-medium: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* Keep only the pulse animation - used in PlaceholderState */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
