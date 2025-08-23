@@ -8,7 +8,6 @@
 <div align="center">
 
 [![MSc Dissertation](https://img.shields.io/badge/MSc%20Dissertation-Queen%20Mary%20University%20of%20London-003E74?style=for-the-badge&logo=graduation-cap)](https://www.qmul.ac.uk/)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)](https://github.com/yusufmo1/smiles2spec)
 [![Academic Year](https://img.shields.io/badge/Academic%20Year-2024--2025-blue?style=for-the-badge)](https://github.com/yusufmo1)
 
 ### Core Technologies
