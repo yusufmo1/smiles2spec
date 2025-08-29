@@ -41,6 +41,6 @@
     "jszip": "^3.10.1",
     "marked": "^15.0.12",
     "plotly.js-dist-min": "^3.0.1",
-    "swiper": "^11.2.8",
+    "swiper": "^11.2.8"
   }
 }
